@@ -1,7 +1,6 @@
 package app.stripsense.ui
 
 import android.content.Intent
-import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -38,6 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import app.stripsense.ui.theme.AppColors
 import app.stripsense.ui.theme.AppShapes
 import app.stripsense.ui.theme.AppType
@@ -73,7 +73,7 @@ fun HelpCard(language: String, onClose: () -> Unit) {
             Button(
                 onClick = {
                     // ACTION_DIAL only fills in the number; the person presses call.
-                    runCatching { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:112"))) }
+                    runCatching { context.startActivity(Intent(Intent.ACTION_DIAL, "tel:112".toUri())) }
                         .onFailure { Log.w("StripSense", "no dialer: ${it.message}") }
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = AppColors.sos, contentColor = Color.White),
