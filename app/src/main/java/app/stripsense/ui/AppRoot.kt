@@ -26,7 +26,12 @@ fun AppRoot(state: AppState) {
     BackHandler(enabled = screen == Screen.SCAN) { state.go(Screen.TODAY) }
 
     val dark = screen == Screen.SCAN || screen == Screen.ASK
-    Column(Modifier.fillMaxSize().background(if (dark) AppColors.brand700 else AppColors.canvas)) {
+    val background = when (screen) {
+        Screen.SCAN -> AppColors.ink
+        Screen.ASK -> AppColors.brand700
+        else -> AppColors.canvas
+    }
+    Column(Modifier.fillMaxSize().background(background)) {
         val title = Labels.get(titleKey(screen), lang)
         if (screen == Screen.SCAN) {
             TopBar(state, title, onBack = { state.go(Screen.TODAY) }, dark = true)
@@ -36,7 +41,7 @@ fun AppRoot(state: AppState) {
         Box(Modifier.weight(1f)) {
             when (screen) {
                 Screen.ASK -> EmptyScreen(title, Labels.get("soonAsk", lang), lang, dark = true)
-                Screen.SCAN -> EmptyScreen(title, Labels.get("soonScan", lang), lang, dark = true)
+                Screen.SCAN -> ScanScreen(lang)
                 Screen.NUMBERS -> EmptyScreen(title, Labels.get("soonNumbers", lang), lang)
                 Screen.FAMILY -> EmptyScreen(title, Labels.get("soonFamily", lang), lang)
                 else -> EmptyScreen(title, Labels.get("soonToday", lang), lang)
