@@ -1,0 +1,6 @@
+nickname_en,nickname_hi,type,brand,generics,strengths,release,extra_words,times,note_en,note_hi,status,stopped_on,colour
+fever tablet,बुख़ार की गोली,CAMERA,FEVORA,PARACETAMOL,500 mg,,,08:00;14:00;20:00,after food,खाने के बाद,ACTIVE,,#C0562D
+vitamin tablet,विटामिन की गोली,CAMERA,CALVORA,CALCIUM;VITAMIN D3,500 mg;250 IU,,D,14:00,,,ACTIVE,,#2F6F9F
+BP tablet,बीपी की गोली,CAMERA,AMLOVA,AMLODIPINE,5 mg,,,08:00,,,STOPPED,2026-10-01,#6B4FA0
+sugar tablet,शुगर की गोली,CAMERA,GLYMET,METFORMIN,500 mg,SR,,08:00;20:00,with food,खाने के साथ,ACTIVE,,#1F8A5B
+eye drops,आँख की दवा,BUTTON,TEARVA,CARBOXYMETHYLCELLULOSE,0.5 %,,,08:00;20:00,,,ACTIVE,,#7A5BC0
