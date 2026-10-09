@@ -2,11 +2,13 @@ package app.stripsense.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -35,7 +37,13 @@ import app.stripsense.ui.theme.AppType
 
 /** Title on the left, the language switch and the red Help button on the right (spec 06 section 2). */
 @Composable
-fun TopBar(state: AppState, title: String, onBack: (() -> Unit)? = null, dark: Boolean = false) {
+fun TopBar(
+    state: AppState,
+    title: String,
+    onBack: (() -> Unit)? = null,
+    dark: Boolean = false,
+    onTitleLongPress: (() -> Unit)? = null,
+) {
     val lang = state.language
     val ink = if (dark) AppColors.surface else AppColors.ink
     Row(
@@ -52,9 +60,18 @@ fun TopBar(state: AppState, title: String, onBack: (() -> Unit)? = null, dark: B
             style = AppType.screenTitle.copy(fontSize = 24.sp, color = ink),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f).padding(start = if (onBack == null) 4.dp else 0.dp),
+            modifier = Modifier
+                .weight(1f)
+                .then(
+                    if (onTitleLongPress != null) {
+                        Modifier.combinedClickable(onClick = {}, onLongClick = onTitleLongPress)
+                    } else {
+                        Modifier
+                    },
+                )
+                .padding(start = if (onBack == null) 4.dp else 0.dp),
         )
-        LanguageSwitch(lang) { state.language = it }
+        LanguageSwitch(lang) { state.setLanguage(it) }
         Spacer(Modifier.width(8.dp))
         HelpButton(lang) { state.go(Screen.HELP) }
     }
@@ -76,7 +93,7 @@ private fun Part(text: String, picked: Boolean, onClick: () -> Unit) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .height(48.dp)
+            .heightIn(min = 48.dp)
             .widthIn(min = 48.dp)
             .clip(AppShapes.chip)
             .background(if (picked) AppColors.ink else AppColors.surface)
@@ -92,7 +109,7 @@ private fun HelpButton(language: String, onClick: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .height(56.dp)
+            .heightIn(min = 56.dp)
             .clip(AppShapes.chip)
             .background(AppColors.sos)
             .clickable(onClick = onClick)

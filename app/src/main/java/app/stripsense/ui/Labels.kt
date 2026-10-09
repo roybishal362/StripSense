@@ -1,38 +1,51 @@
 package app.stripsense.ui
 
+import app.stripsense.core.Slot
+import app.stripsense.core.Words
+import java.time.LocalTime
+
 /** Button and screen labels in English and Hindi (spec 03 section 5). Answers never live here. */
 object Labels {
-    private val table: Map<String, Pair<String, String>> = mapOf(
-        "appName" to ("StripSense" to "StripSense"),
-        "help" to ("Help" to "मदद"),
-        "today" to ("Today" to "आज"),
-        "askTitle" to ("Ask" to "पूछें"),
-        "scan" to ("Scan" to "स्कैन"),
-        "numbers" to ("Numbers" to "आँकड़े"),
-        "family" to ("Family" to "परिवार"),
-        "close" to ("Close" to "बंद करें"),
-        "back" to ("Back" to "वापस"),
-        "call112" to ("Call 112" to "112 पर फ़ोन करें"),
-        "call" to ("Call {c}" to "{c} को फ़ोन करें"),
-        "helpIntro" to ("Who do you want to call?" to "किसे फ़ोन करना है?"),
-        "guideHint" to ("Hold the whole strip inside the frame" to "पूरी पट्टी चौकोर के अंदर रखिए"),
-        "reading" to ("Reading the strip…" to "पट्टी पढ़ी जा रही है…"),
-        "cameraNeeded" to ("StripSense needs the camera to read a strip." to "पट्टी पढ़ने के लिए कैमरा चाहिए।"),
-        "openSettings" to ("Open settings" to "सेटिंग खोलें"),
-        "torch" to ("Torch" to "टॉर्च"),
-        "showText" to ("Show read text" to "पढ़ा हुआ दिखाएँ"),
-        "hideText" to ("Hide read text" to "पढ़ा हुआ छिपाएँ"),
-        "copy" to ("Copy" to "कॉपी करें"),
-        "copied" to ("Copied" to "कॉपी हो गया"),
-        // Labels added in P01 for the empty screens; later stages replace these screens.
-        "soonToday" to ("Your medicines for today will be listed here." to "यहाँ आज की दवाएँ दिखेंगी।"),
-        "soonAsk" to ("You will ask about your medicines here, by voice or by typing." to "यहाँ आप बोलकर या लिखकर अपनी दवाओं के बारे में पूछ सकेंगे।"),
-        "soonNumbers" to ("Trial results will be shown here." to "यहाँ परीक्षण के नतीजे दिखेंगे।"),
-        "soonFamily" to ("The family will manage the list here." to "यहाँ परिवार सूची संभालेगा।"),
-    )
 
     fun get(key: String, language: String): String {
-        val pair = table[key] ?: return key
+        val pair = EXTRA_LABELS[key] ?: LABELS[key] ?: return key
         return if (language == "hi") pair.second else pair.first
     }
+
+    /** A label with its {x} values filled in: fill("call", lang, "c" to "Rahul"). */
+    fun fill(key: String, language: String, vararg values: Pair<String, Any>): String {
+        var text = get(key, language)
+        for ((k, v) in values) text = text.replace("{$k}", v.toString())
+        return text
+    }
+
+    fun slot(slot: Slot, language: String): String = get(
+        when (slot) {
+            Slot.MORNING -> "slotMorning"
+            Slot.AFTERNOON -> "slotAfternoon"
+            Slot.EVENING -> "slotEvening"
+            Slot.NIGHT -> "slotNight"
+        },
+        language,
+    )
+
+    /** "Morning dose · 8:00 am". */
+    fun doseLine(time: LocalTime, language: String): String =
+        fill("doseLine", language, "s" to slot(Slot.of(time), language), "t" to Words.timeShown(time, language))
+
+    /** The greeting by the clock: morning 04:00 to 11:59, afternoon 12:00 to 15:59, evening otherwise. */
+    fun greeting(time: LocalTime, call: String, language: String): String {
+        val key = when (time.hour) {
+            in 4..11 -> "greetMorning"
+            in 12..15 -> "greetAfternoon"
+            else -> "greetEvening"
+        }
+        val text = fill(key, language, "c" to call)
+        return if (call.isBlank()) text.trimEnd(' ', ',') else text
+    }
+    private val EXTRA_LABELS = mapOf(
+        "fileWorking" to ("Opening or saving the file. Please wait." to "फ़ाइल खुल या सेव हो रही है। थोड़ा इंतज़ार कीजिए।"),
+        "fileReadFailed" to ("The file could not be read. Choose the list file again." to "फ़ाइल नहीं पढ़ी गई। सूची की फ़ाइल फिर चुनिए।"),
+        "cameraFailed" to ("The camera could not start. Go back and try Scan again." to "कैमरा शुरू नहीं हुआ। वापस जाकर फिर स्कैन कीजिए।"),
+    )
 }

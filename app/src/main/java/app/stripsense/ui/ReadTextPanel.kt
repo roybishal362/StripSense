@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -59,7 +60,7 @@ fun ReadTextPanel(lines: List<OcrLine>, fps: Int, width: Int, height: Int, langu
                 },
                 shape = AppShapes.button,
                 colors = ButtonDefaults.buttonColors(containerColor = AppColors.brand500),
-                modifier = Modifier.height(56.dp),
+                modifier = Modifier.heightIn(min = 56.dp),
             ) {
                 Text(Labels.get(if (copied) "copied" else "copy", language), fontWeight = FontWeight.Bold)
             }

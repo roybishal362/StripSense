@@ -1,6 +1,8 @@
 package app.stripsense.ui
 
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -37,15 +40,19 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.net.toUri
+import app.stripsense.AppState
+import app.stripsense.core.Part
 import app.stripsense.ui.theme.AppColors
 import app.stripsense.ui.theme.AppShapes
 import app.stripsense.ui.theme.AppType
 
 /** The full-screen Help card (spec 06). It closes only with its own Close button. */
 @Composable
-fun HelpCard(language: String, onClose: () -> Unit) {
+fun HelpCard(state: AppState, onClose: () -> Unit) {
     val context = LocalContext.current
+    val language = state.language
+    val person = state.data.person
+    val selfHarm = state.helpSelfHarm
     Column(Modifier.fillMaxSize().background(AppColors.canvas).verticalScroll(rememberScrollState())) {
         Column(
             Modifier
@@ -64,26 +71,25 @@ fun HelpCard(language: String, onClose: () -> Unit) {
             Spacer(Modifier.height(20.dp))
             Text(Labels.get("help", language), color = Color.White, fontSize = 36.sp, fontWeight = FontWeight.ExtraBold)
             Spacer(Modifier.height(8.dp))
+            if (selfHarm) {
+                Text(state.render(listOf(Part("SH1"))).first().shown, style = AppType.forLanguage(AppType.answer, language).copy(color = Color.White))
+                Spacer(Modifier.height(8.dp))
+            }
             Text(Labels.get("helpIntro", language), style = AppType.forLanguage(AppType.body, language).copy(color = Color.White))
         }
         Column(
             Modifier.padding(20.dp).navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Button(
-                onClick = {
-                    // ACTION_DIAL only fills in the number; the person presses call.
-                    runCatching { context.startActivity(Intent(Intent.ACTION_DIAL, "tel:112".toUri())) }
-                        .onFailure { Log.w("StripSense", "no dialer: ${it.message}") }
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = AppColors.sos, contentColor = Color.White),
-                shape = AppShapes.card,
-                modifier = Modifier.fillMaxWidth().height(96.dp),
-            ) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Call, contentDescription = null, modifier = Modifier.size(32.dp))
-                    Spacer(Modifier.width(16.dp))
-                    Text(Labels.get("call112", language), fontSize = 26.sp, fontWeight = FontWeight.Bold)
+            if (selfHarm) CallButton(Labels.get("callTele", language), AppColors.brand700) { dial(context, "14416") }
+            CallButton(Labels.get("call112", language), AppColors.sos) {
+                // ACTION_DIAL only fills in the number; the person presses call.
+                state.say(listOf(Part("EM1")))
+                dial(context, "112")
+            }
+            if (person.contactPhone.isNotBlank()) {
+                CallButton(Labels.fill("call", language, "c" to person.contact(language)), AppColors.brand700) {
+                    dial(context, person.contactPhone)
                 }
             }
             OutlinedButton(
@@ -91,10 +97,31 @@ fun HelpCard(language: String, onClose: () -> Unit) {
                 shape = AppShapes.button,
                 border = BorderStroke(1.dp, AppColors.greyBg),
                 colors = ButtonDefaults.outlinedButtonColors(containerColor = AppColors.surface, contentColor = AppColors.ink),
-                modifier = Modifier.fillMaxWidth().height(64.dp),
+                modifier = Modifier.fillMaxWidth().heightIn(min = 64.dp),
             ) {
                 Text(Labels.get("close", language), fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
+}
+
+@Composable
+private fun CallButton(label: String, colour: Color, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(containerColor = colour, contentColor = Color.White),
+        shape = AppShapes.card,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 96.dp),
+    ) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.Call, contentDescription = null, modifier = Modifier.size(32.dp))
+            Spacer(Modifier.width(16.dp))
+            Text(label, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+fun dial(context: Context, number: String) {
+    runCatching { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(number))).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+        .onFailure { Log.w("StripSense", "no dialer: ${it.javaClass.simpleName}") }
 }

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; img-src data:">
+<title>StripSense family files</title>
+<style>
+:root{color-scheme:light;--green:#146b45;--ink:#172c25;--paper:#f3f7f4}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.55 system-ui,sans-serif}main{max-width:1200px;margin:auto;padding:28px 20px}h1{font-size:clamp(28px,4vw,42px);line-height:1.2}h2{font-size:24px}p{max-width:80ch}.card{background:white;padding:24px;border:1px solid #d9e4dc;border-radius:16px;margin:20px 0}.drop{border:2px dashed #91b7a0;background:#edf7ef;text-align:center}.drop.active{background:#d1f1db}button,label.pick{display:inline-block;background:var(--green);color:white;border:0;border-radius:10px;padding:12px 20px;font:inherit;cursor:pointer}button:focus-visible,label:focus-within{outline:3px solid #174cf1;outline-offset:3px}input{font:inherit;max-width:100%}.scroll{overflow:auto}table{width:100%;border-collapse:collapse;white-space:nowrap}th,td{text-align:left;padding:12px;border-bottom:1px solid #d9e4dc}th{background:#edf5ef;font-weight:650}td:first-child{white-space:normal;min-width:180px}small{display:block;color:#586b62}.pill{display:inline-block;border-radius:16px;padding:4px 10px;font-size:14px}.marked{background:#d7f4df;color:#145032}.not-marked{background:#ffefc6;color:#755315}.not-sure{background:#eee0ff;color:#643b88}.later{color:#738077}.error{color:#9f2020;white-space:pre-wrap}#evening{white-space:pre-wrap}footer{color:#586b62;font-size:14px}section[hidden]{display:none}
+</style>
+<main><h1>StripSense family files</h1><p>Open a week file or medicine list copied from the phone over Office Kit. This page works offline. Your files stay in this browser tab.</p>
+<div class="card drop" id="drop"><p>Drop week.csv or list.csv here.</p><input type="file" id="file" accept=".csv,text/csv" aria-label="Choose a StripSense file"><p id="message" role="status" aria-live="polite"></p></div>
+<section id="week" hidden><h2 id="heading"></h2><p id="updated"></p><div class="card scroll"><table id="weekTable"></table></div><div class="card"><h2>Evening message</h2><p id="evening"></p><button id="copy" type="button">Copy evening message</button><p id="copied" role="status"></p></div></section>
+<section id="list" hidden><h2>Medicine list</h2><div class="card scroll"><table id="listTable"></table></div></section>
+<footer>These are marks made on the phone. “Not marked” does not always mean missed. Check with the person before asking them to take another.</footer></main>
+<script>
+'use strict';
+const $=id=>document.getElementById(id), LIMIT=5*1024*1024;
+function csv(text){
+ const rows=[];let row=[],cell='',quoted=false,closed=false;
+ text=text.replace(/^\uFEFF/,'');
+ for(let i=0;i<text.length;i++){
+  const c=text[i];
+  if(quoted){if(c==='"'){if(text[i+1]==='"'){cell+='"';i++;}else{quoted=false;closed=true;}}else cell+=c;}
+  else if(c==='"'){if(cell||closed)throw Error('A quote is in the wrong place.');quoted=true;}
+  else if(c===','){row.push(cell);cell='';closed=false;}
+  else if(c==='\n'||c==='\r'){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cell);if(row.some(x=>x!==''))rows.push(row);row=[];cell='';closed=false;}
+  else {if(closed)throw Error('Text follows a closing quote.');cell+=c;}
+ }
+ if(quoted)throw Error('A quoted cell is not closed.');
+ row.push(cell);if(row.some(x=>x!==''))rows.push(row);return rows;
+}
+function node(tag,text,parent){const el=document.createElement(tag);if(text!==undefined)el.textContent=text;if(parent)parent.append(el);return el;}
+function time(t){if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(t))throw Error('A time is not HH:mm.');const h=Number(t.slice(0,2));return `${h%12||12}:${t.slice(3)} ${h<12?'am':'pm'}`;}
+function date(s){if(!/^\d{4}-\d{2}-\d{2}$/.test(s))throw Error('A date is not YYYY-MM-DD.');const d=new Date(s+'T12:00:00Z');if(!Number.isFinite(d.getTime())||d.toISOString().slice(0,10)!==s)throw Error('A date is not valid.');return d;}
+function records(rows,header){const indexes=header.map(x=>rows[0].indexOf(x));if(indexes.some(x=>x<0))throw Error('The file is missing a required column.');return rows.slice(1).map((r,i)=>{if(r.length!==rows[0].length)throw Error(`Row ${i+2} has the wrong number of cells.`);return Object.fromEntries(header.map((k,j)=>[k,r[indexes[j]]]));});}
+function tableHead(table,headers){table.replaceChildren();const tr=node('tr',undefined,node('thead',undefined,table));headers.forEach(h=>node('th',h,tr));return node('tbody',undefined,table);}
+function showWeek(rows){
+ if(rows.length<2||rows[0].length!==8||rows[0][2]!=='person'||rows[0][4]!=='list_saved_at'||rows[0][6]!=='woman'||!['true','false'].includes(rows[0][7]))throw Error('The week file metadata is not valid.');
+ const person=rows[0][3],woman=rows[0][7]==='true',exported=rows[0][1];
+ if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(exported))throw Error('The export time is not valid.');
+ const data=records(rows.slice(1),['date','time','nickname','brand','strength','state','marked_at','source']);
+ const days=[...new Set(data.map(r=>r.date))].sort();if(days.length>7)throw Error('A week file has more than seven days.');days.forEach(date);
+ const groups=new Map();
+ for(const r of data){time(r.time);if(!['marked','not marked','not sure','later'].includes(r.state))throw Error('A mark state is not valid.');if(r.marked_at)time(r.marked_at);if(!['','prompt','voice','button'].includes(r.source))throw Error('A mark source is not valid.');const key=JSON.stringify([r.nickname,r.brand,r.strength,r.time]);if(!groups.has(key))groups.set(key,{r,days:new Map()});const g=groups.get(key);if(g.days.has(r.date))throw Error('Two rows refer to the same slot.');g.days.set(r.date,r);}
+ const body=tableHead($('weekTable'),['Medicine and time',...days.map(d=>date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'UTC'}))]);
+ for(const {r,days:marks} of [...groups.values()].sort((a,b)=>a.r.time.localeCompare(b.r.time)||a.r.nickname.localeCompare(b.r.nickname))){const tr=node('tr',undefined,body);const title=node('td',r.nickname,tr);node('small',`${r.brand} ${r.strength} · ${time(r.time)}`,title);for(const d of days){const td=node('td',undefined,tr),mark=marks.get(d);const pill=node('span',!mark||mark.state==='later'?'·':mark.state==='marked'&&mark.marked_at?time(mark.marked_at):mark.state,td);pill.className='pill '+(mark?mark.state.replace(' ','-'):'later');pill.title=mark?`${mark.state}${mark.source?' ('+mark.source+')':''}`:'No slot';}}
+ $('heading').textContent=`${person}'s medicines, this week`;$('updated').textContent=`Last updated ${exported.replace('T',' ')}, from ${woman?'her':'his'} phone over Office Kit.`;
+ const exportedDay=date(exported.slice(0,10));time(exported.slice(11));if(Number(exported.slice(11,13))<4)exportedDay.setUTCDate(exportedDay.getUTCDate()-1);
+ const latest=days[days.length-1]||exportedDay.toISOString().slice(0,10),onDay=data.filter(r=>r.date===latest&&r.state!=='later');
+ if(!data.length)node('td','No medicine slots in this file. Ask the family to check the list.',node('tr',undefined,body));
+ let message=`${person||'Today'}, ${date(latest).toLocaleDateString('en-GB',{day:'numeric',month:'long',timeZone:'UTC'})}. `;
+ const buckets=[['Morning',r=>Number(r.time.slice(0,2))>=4&&Number(r.time.slice(0,2))<12],['Afternoon',r=>Number(r.time.slice(0,2))>=12&&Number(r.time.slice(0,2))<16],['Evening',r=>Number(r.time.slice(0,2))>=16&&Number(r.time.slice(0,2))<20],['Night',r=>Number(r.time.slice(0,2))<4||Number(r.time.slice(0,2))>=20]];
+ for(const [name,pick] of buckets){const items=onDay.filter(pick).map(r=>{let s=`${r.nickname} ${r.state}`;if(r.state==='marked'){s+=` ${time(r.marked_at)}`;s+=r.source==='prompt'?' (on the prompt)':r.source==='voice'?' (by voice)':r.source==='button'?' (with its button)':'';}return s;});if(items.length)message+=`${name}: ${items.join('; ')}. `;}
+ message+=`"Not marked" doesn't always mean missed. Please check with ${person||(woman?'Her':'Him')} before asking ${woman?'her':'him'} to take another.`;
+ $('evening').textContent=message;$('week').hidden=false;$('copied').textContent='';
+}
+function showList(rows){
+ const data=records(rows,['nickname_en','nickname_hi','type','brand','generics','strengths','release','extra_words','times','note_en','note_hi','status','stopped_on','colour']);if(!data.length)throw Error('The medicine list is empty.');
+ const body=tableHead($('listTable'),['Nickname','Print on the medicine','Strengths','Times','Status','Note']);
+ for(const r of data){if(!['CAMERA','BUTTON'].includes(r.type)||!['ACTIVE','STOPPED'].includes(r.status))throw Error('A medicine type or status is not valid.');const times=r.times?r.times.split(';').map(time).join(', '):'';const tr=node('tr',undefined,body),nick=node('td',r.nickname_en,tr);node('small',r.nickname_hi,nick);const print=node('td',[r.brand,r.release].filter(Boolean).join(' '),tr);node('small',r.generics.split(';').join(' + '),print);node('td',r.strengths.split(';').join(' + '),tr);node('td',times,tr);node('td',r.status==='STOPPED'?`Stopped ${r.stopped_on}`:'Active',tr);const note=node('td',r.note_en,tr);node('small',r.note_hi,note);if(r.type==='BUTTON')node('small','Marked with its button',note);}
+ $('list').hidden=false;
+}
+async function load(file){$('message').className='';$('message').textContent='Opening file…';try{if(!file) return;if(file.size>LIMIT)throw Error('The file is larger than 5 MB.');const rows=csv(await file.text());if(!rows.length)throw Error('The file is empty.');if(rows[0][0]==='exported_at')showWeek(rows);else if(rows[0].includes('nickname_en'))showList(rows);else throw Error('Choose a StripSense week file or medicine list.');$('message').textContent='File opened.';}catch(e){$('message').className='error';$('message').textContent=e.message;}}
+$('file').addEventListener('change',e=>load(e.target.files[0]));
+for(const type of ['dragover','dragenter'])$('drop').addEventListener(type,e=>{e.preventDefault();$('drop').classList.add('active');});
+$('drop').addEventListener('dragleave',()=>$('drop').classList.remove('active'));
+$('drop').addEventListener('drop',e=>{e.preventDefault();$('drop').classList.remove('active');load(e.dataTransfer.files[0]);});
+$('copy').addEventListener('click',async()=>{try{if(navigator.clipboard)await navigator.clipboard.writeText($('evening').textContent);else throw Error();$('copied').textContent='Copied.';}catch{const selection=window.getSelection(),range=document.createRange();range.selectNodeContents($('evening'));selection.removeAllRanges();selection.addRange(range);$('copied').textContent='Text selected. Press Ctrl+C to copy.';}});
+</script></html>

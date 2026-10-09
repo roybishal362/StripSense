@@ -41,20 +41,20 @@ fun BottomBar(state: AppState) {
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Place(Icons.Filled.Home, Labels.get("today", lang), state.screen == Screen.TODAY) { state.go(Screen.TODAY) }
-        Place(AppIcons.Microphone, Labels.get("askTitle", lang), state.screen == Screen.ASK) { state.go(Screen.ASK) }
-        ScanButton(Labels.get("scan", lang)) { state.go(Screen.SCAN) }
-        Place(AppIcons.Chart, Labels.get("numbers", lang), state.screen == Screen.NUMBERS) { state.go(Screen.NUMBERS) }
-        Place(Icons.Filled.Person, Labels.get("family", lang), state.screen == Screen.FAMILY) { state.go(Screen.FAMILY) }
+        Place(Icons.Filled.Home, Labels.get("today", lang), state.screen == Screen.TODAY, Modifier.weight(1f)) { state.go(Screen.TODAY) }
+        Place(AppIcons.Microphone, Labels.get("askTitle", lang), state.screen == Screen.ASK, Modifier.weight(1f)) { state.go(Screen.ASK) }
+        ScanButton(Labels.get("scan", lang), Modifier.weight(1f)) { state.go(Screen.SCAN) }
+        Place(AppIcons.Chart, Labels.get("numbers", lang), state.screen == Screen.NUMBERS, Modifier.weight(1f)) { state.go(Screen.NUMBERS) }
+        Place(Icons.Filled.Person, Labels.get("family", lang), state.screen == Screen.FAMILY, Modifier.weight(1f)) { state.go(Screen.FAMILY) }
     }
 }
 
 @Composable
-private fun Place(icon: ImageVector, label: String, picked: Boolean, onClick: () -> Unit) {
+private fun Place(icon: ImageVector, label: String, picked: Boolean, modifier: Modifier, onClick: () -> Unit) {
     val colour = if (picked) AppColors.brand700 else AppColors.ink3
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.heightIn(min = 56.dp).clip(CircleShape).clickable(onClick = onClick).padding(8.dp),
+        modifier = modifier.heightIn(min = 56.dp).clip(CircleShape).clickable(onClick = onClick).padding(8.dp),
     ) {
         Icon(icon, contentDescription = null, tint = colour, modifier = Modifier.size(26.dp))
         Text(label, color = colour, fontSize = 13.sp, fontWeight = if (picked) FontWeight.Bold else FontWeight.Medium, textAlign = TextAlign.Center)
@@ -62,8 +62,8 @@ private fun Place(icon: ImageVector, label: String, picked: Boolean, onClick: ()
 }
 
 @Composable
-private fun ScanButton(label: String, onClick: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+private fun ScanButton(label: String, modifier: Modifier, onClick: () -> Unit) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
