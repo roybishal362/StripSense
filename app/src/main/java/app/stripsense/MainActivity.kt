@@ -1,13 +1,22 @@
 package app.stripsense
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.Text
+import androidx.activity.enableEdgeToEdge
+import app.stripsense.ui.AppRoot
+import app.stripsense.ui.theme.StripSenseTheme
 
 class MainActivity : ComponentActivity() {
+    private val state = AppState()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { Text("Hello Android") }
+        Log.i("StripSense", "started")
+        enableEdgeToEdge()
+        setContent {
+            StripSenseTheme { AppRoot(state) }
+        }
     }
 }
