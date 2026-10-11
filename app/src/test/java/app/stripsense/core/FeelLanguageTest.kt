@@ -22,17 +22,36 @@ class FeelLanguageTest {
         }
     }
 
-    @Test fun theEndThatTicksIsTheWayToMove() {
+    /** A pattern as its parts: every stretch of movement is a "buzz" or a "tick". */
+    private fun shape(buzz: Buzz) = buzz.times.zip(buzz.strengths).filter { it.second > 0 }.map { if (it.first >= 150) "buzz" else "tick" }
+
+    @Test fun eachWayToMoveHasItsOwnPatternWhicheverEndItIsFeltAt() {
+        // As a hand feels them that cannot tell the two ends of the phone apart. Tried on 11 October: it cannot.
+        val felt = Toward.entries.associateWith { FeelLanguage.pull(it, 0.5f).merged()!! }
+        assertEquals(listOf("buzz"), shape(felt.getValue(Toward.LEFT)))
+        assertEquals(listOf("buzz", "buzz"), shape(felt.getValue(Toward.RIGHT)))
+        assertEquals(listOf("tick", "buzz"), shape(felt.getValue(Toward.AWAY)))
+        assertEquals(listOf("buzz", "tick"), shape(felt.getValue(Toward.CLOSER)))
+        // None of them is the no (two knocks) or the plain tick of "nearer", and none lasts like the yes.
+        val taken = listOf(FeelLanguage.no(), FeelLanguage.nearer(0.5f)).map { shape(it.merged()!!) }
+        for (way in felt.values) assertTrue(shape(way) !in taken)
+        assertTrue(felt.getValue(Toward.LEFT).lasts * 2 < FeelLanguage.yes().lasts)
+        // Forward runs up the phone and back runs down it: the bottom end speaks first for forward, the top end for back.
         val away = FeelLanguage.pull(Toward.AWAY, 0.5f)
-        assertNotNull(away.top); assertNull(away.bottom)
+        assertTrue(away.bottom!!.strengths.first() > 0 && away.top!!.strengths.first() == 0 && away.top!!.strengths.last() > 0)
         val closer = FeelLanguage.pull(Toward.CLOSER, 0.5f)
-        assertNull(closer.top); assertNotNull(closer.bottom)
-        // Sideways is felt at both ends: one tick for left, two for right.
+        assertTrue(closer.top!!.strengths.first() > 0 && closer.bottom!!.strengths.first() == 0 && closer.bottom!!.strengths.last() > 0)
+        // Sideways is the same at both ends.
         val left = FeelLanguage.pull(Toward.LEFT, 0.5f)
-        val right = FeelLanguage.pull(Toward.RIGHT, 0.5f)
         assertEquals(left.top, left.bottom)
-        assertEquals(1, left.top!!.strengths.count { it > 0 })
-        assertEquals(2, right.top!!.strengths.count { it > 0 })
+    }
+
+    @Test fun aPhoneWithOneMotorPlaysBothEndsAsOne() {
+        assertEquals(Buzz(listOf(45, 80, 200), listOf(255, 0, 255)), FeelLanguage.pull(Toward.AWAY, 1f).merged())
+        assertEquals(Buzz(listOf(200, 80, 45), listOf(255, 0, 255)), FeelLanguage.pull(Toward.CLOSER, 1f).merged())
+        assertEquals(FeelLanguage.yes().top, FeelLanguage.yes().merged())
+        assertEquals(FeelLanguage.no().top, Felt(FeelLanguage.no().top, null).merged())
+        assertNull(Felt(null, null).merged())
     }
 
     @Test fun everyTickIsAtFullStrengthAndNearnessIsToldByHowFastTheyCome() {
@@ -43,8 +62,14 @@ class FeelLanguageTest {
             assertEquals(255, FeelLanguage.nearer(closeness).top!!.strengths.max())
         }
         assertTrue(Homing.intervalMs(0.9f) * 3 < Homing.intervalMs(0.1f))
-        // A tick at one end lasts long enough for the hand to tell which end it was.
-        assertTrue(FeelLanguage.pull(Toward.AWAY, 0.5f).top!!.lasts >= 60)
+        // A way to move is never begun again before it has ended and the hand has rested: begun again every
+        // 130 ms, a tick and a buzz ran into each other. A plain tick may still come that fast.
+        for (way in Toward.entries) {
+            val lasts = FeelLanguage.pull(way, 1f).lasts
+            assertTrue("$way", Homing.periodMs(1f, lasts) >= lasts + 200)
+        }
+        assertEquals(Homing.NEAR_MS, Homing.periodMs(1f, FeelLanguage.nearer(1f).lasts))
+        assertEquals(Homing.FAR_MS, Homing.periodMs(0f, FeelLanguage.pull(Toward.LEFT, 0f).lasts))
     }
 
     @Test fun yesAndNoCannotBeMistakenForEachOther() {

@@ -24,8 +24,8 @@ import kotlinx.coroutines.delay
  * Ticks and pulses toward the due strip. [closeness] is 0 to 1: how near the hand is to the strip, or with
  * no hand in view how near the strip is to the centre of the picture. Null means silence.
  * [key] names what is being followed; [onHeld] runs once when [locked] has lasted.
- * [toward]: which way to move. The tick is then felt at that end of the phone (see FeelLanguage); with no
- * direction it is a plain tick at both ends.
+ * [toward]: which way to move. That way's own pattern is then felt (see FeelLanguage.pull); with no
+ * direction it is a plain tick at both ends. [beep]: the ticks are heard as well as felt.
  */
 @Composable
 fun SceneHoming(closeness: Float?, locked: Boolean, key: Any?, toward: app.stripsense.core.guide.Toward? = null, handLed: Boolean = false, beep: Boolean = true, onHeld: () -> Unit) {
@@ -44,21 +44,25 @@ fun SceneHoming(closeness: Float?, locked: Boolean, key: Any?, toward: app.strip
         while (true) {
             val value = near ?: break
             val now = SystemClock.elapsedRealtime()
+            var wait = Homing.intervalMs(value)
             if (!on) {
                 lockedSince = null
                 if (beep && !Feel.touchOnly) runCatching { tone?.startTone(ToneGenerator.TONE_PROP_BEEP, 30) }
-                Feel.play(context, way?.let { app.stripsense.core.guide.FeelLanguage.pull(it, value) } ?: app.stripsense.core.guide.FeelLanguage.nearer(value), tick = true)
+                val felt = way?.let { app.stripsense.core.guide.FeelLanguage.pull(it, value) } ?: app.stripsense.core.guide.FeelLanguage.nearer(value)
+                Feel.play(context, felt, tick = true)
+                // A way to move has several parts: it is not begun again before it has ended and the hand has rested.
+                wait = Homing.periodMs(value, felt.lasts)
             } else if (lockedSince == null) {
                 // There: one firm pulse and a higher tone, felt and heard as different from a tick.
                 lockedSince = now
-                if (!Feel.touchOnly) runCatching { tone?.startTone(ToneGenerator.TONE_PROP_ACK, 180) }
+                if (beep && !Feel.touchOnly) runCatching { tone?.startTone(ToneGenerator.TONE_PROP_ACK, 180) }
                 // With a finger on the strip, its rhythm and the yes are already being felt: this one waits its turn.
                 Feel.play(context, app.stripsense.core.guide.FeelLanguage.yes(), tick = handLed)
             } else if (!opened && Homing.held(lockedSince, now)) {
                 opened = true
                 held()
             }
-            delay(Homing.intervalMs(value))
+            delay(wait)
         }
     }
 }

@@ -176,46 +176,51 @@ fun SceneVoiceGuide(state: AppState, regions: List<SceneRegion>, imageWidth: Int
         announcements.observe(message, clock)
         // The words on the screen follow what is true, once it has held for a moment: no flicker, no old sentence.
         if (displayed == null || announcements.steadyFor(clock) >= SHOW_MS) displayed = message
-        if (!enabled || paused) return@LaunchedEffect
+        if (paused) return@LaunchedEffect
+        // "Voice off" silences the voice and nothing else. What is felt in the hand goes on: with the voice off
+        // the phone used to stop ticking and buzzing as well, which is exactly when touch is all there is.
+        val voiced = enabled && !talkBack
         // A sentence about a strip that is no longer in front of the camera is not finished.
         // The family's recorded message counts as speaking: nothing talks over it, and it is cut off like a sentence.
         val talking = state.speaker.isSpeaking() || state.notePlayer.isPlaying()
-        if (!talkBack && talking && announcements.stale(clock)) {
+        if (voiced && talking && announcements.stale(clock)) {
             state.speaker.stop()
             state.notePlayer.stop()
             app.stripsense.data.Logs.i("voice: cut off, the camera is on something else")
         }
         val urgent = announcements.urgent(message)
-        announcements.next(message, clock, busy = !talkBack && (state.speaker.isSpeaking() || state.notePlayer.isPlaying()))?.let {
-            if (!talkBack) {
+        announcements.next(message, clock, busy = voiced && (state.speaker.isSpeaking() || state.notePlayer.isPlaying()))?.let {
+            if (voiced) {
                 if (urgent) state.speaker.stop()
                 state.notePlayer.stop()
                 // When a strip has just been named, the family's own recorded message for it follows, if there is one.
+                // Not in "Touch only": the phone makes no sound there.
                 val named = when {
                     it.hint == ScanHint.FOUND -> it.target?.med?.id
                     it.hand is HandCue.Yes -> (it.hand as HandCue.Yes).med.id
                     it.hand is HandCue.Info -> (it.hand as HandCue.Info).med?.id
                     else -> null
-                }?.takeIf { id -> state.notes.has(id) }
+                }?.takeIf { id -> !Feel.touchOnly && state.notes.has(id) }
                 state.speaker.speak(Sentences.scanGuidance(it, state.speechLanguage()), state.speechLanguage() == "hi", onDone = if (named == null) null else ({
                     scope.launch {
                         val wav = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { state.notes.load(named) }
                         if (wav != null && !state.speaker.isSpeaking()) state.notePlayer.play(wav)
                     }
                 }))
-                if (it.hint == ScanHint.OVERVIEW) toldTable = toldTable + it.overview.map { med -> med.id }
-                // A strip that has just been named is also felt: each kind of medicine has its own rhythm in the hand.
-                if (it.hint == ScanHint.FOUND && cue == null) it.target?.med?.let { med -> Feel.play(context, FeelLanguage.signature(Purposes.of(med))) }
-                // What was said and about which medicine, so a trial can be checked afterwards. Never the print that was read.
-                app.stripsense.data.Logs.i("voice: ${it.hint} ${it.hand?.let { cue -> cue::class.simpleName }.orEmpty()} about ${announcements.subject(it) ?: "nothing"}, strips in view ${identities.size}")
             }
+            if (it.hint == ScanHint.OVERVIEW) toldTable = toldTable + it.overview.map { med -> med.id }
+            // A strip that has just been named is also felt: each kind of medicine has its own rhythm in the hand.
+            if (it.hint == ScanHint.FOUND && cue == null) it.target?.med?.let { med -> Feel.play(context, FeelLanguage.signature(Purposes.of(med))) }
+            // What was said or felt and about which medicine, so a trial can be checked afterwards. Never the print that was read.
+            app.stripsense.data.Logs.i("${if (voiced) "voice" else "felt"}: ${it.hint} ${it.hand?.let { cue -> cue::class.simpleName }.orEmpty()} about ${announcements.subject(it) ?: "nothing"}, strips in view ${identities.size}")
         }
     }
 
     // Ticking and pulses lead to the due strip: the hand when one is in view, otherwise the phone itself.
-    val homed = target?.takeIf { it.med.id in ownIds && enabled && !paused && !handInView && (Homing.wanted(it, requested) || (it.med.id == asked && !it.nameOnly)) }
+    // They do not wait on the voice: with "Voice off" pressed the hand is still led, and only the beeps stop.
+    val homed = target?.takeIf { it.med.id in ownIds && !paused && !handInView && (Homing.wanted(it, requested) || (it.med.id == asked && !it.nameOnly)) }
         ?.let { wantedTarget -> identities.firstOrNull { it.first.trackId == wantedTarget.trackId } }
-    val reaching = point?.takeIf { enabled && handInView }?.let { (x, y) ->
+    val reaching = point?.takeIf { handInView }?.let { (x, y) ->
         placed.filter { it.kind == PlacedKind.CHECKED && it.med?.id in wanted }.maxByOrNull { HandGuide.closeness(x, y, it.box, imageWidth, imageHeight) }
             ?.let { it to HandGuide.closeness(x, y, it.box, imageWidth, imageHeight) }
     }
@@ -230,18 +235,18 @@ fun SceneVoiceGuide(state: AppState, regions: List<SceneRegion>, imageWidth: Int
     }
     LaunchedEffect(under?.first) {
         val (_, med, due) = under ?: return@LaunchedEffect
-        if (enabled) Feel.play(context, FeelLanguage.touched(med?.let { Purposes.of(it) }, due, known = med != null))
+        Feel.play(context, FeelLanguage.touched(med?.let { Purposes.of(it) }, due, known = med != null))
     }
     when {
-        // The hand is led by feel: the tick comes from the end of the phone the finger should move toward.
+        // The hand is led by feel: each way to move has its own pattern (FeelLanguage.pull).
         reaching != null -> SceneHoming(reaching.second, cue is HandCue.Yes, "hand-${reaching.first.key}",
-            toward = (cue as? HandCue.Move)?.toward ?: (cue as? HandCue.No)?.toward, handLed = true) { reaching.first.med?.let(onOpenRemembered) }
+            toward = (cue as? HandCue.Move)?.toward ?: (cue as? HandCue.No)?.toward, handLed = true, beep = enabled) { reaching.first.med?.let(onOpenRemembered) }
         homing != null -> SceneHoming(Homing.closeness(homing, imageWidth, imageHeight), Homing.locked(Homing.closeness(homing, imageWidth, imageHeight)),
-            homed?.second?.med?.id, toward = liveSteer) { homed?.let { onOpen(it.first, it.second) } }
-        // Any medicine the voice is steering to is steered to by feel as well: the tick comes from the end of the
-        // phone to move toward, faster as the strip nears the middle, and stops once it is there. It was felt only
+            homed?.second?.med?.id, toward = liveSteer, beep = enabled) { homed?.let { onOpen(it.first, it.second) } }
+        // Any medicine the voice is steering to is steered to by feel as well: the pattern of the way to move,
+        // sooner as the strip nears the middle, and it stops once it is there. It was felt only
         // for the dose that is due; with nothing due the hand was told nothing.
-        steer != null && targetBox != null && enabled && !handInView -> SceneHoming(Homing.closeness(targetBox, imageWidth, imageHeight), false,
+        steer != null && targetBox != null && !handInView -> SceneHoming(Homing.closeness(targetBox, imageWidth, imageHeight), false,
             "lead-" + steer.first.id, toward = steer.second, beep = false) { }
         else -> SceneHoming(null, false, null) { }
     }

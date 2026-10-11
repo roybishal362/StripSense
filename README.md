@@ -4,13 +4,15 @@ An older person has several medicine strips on the table and cannot read the pri
 
 Reading, speaking and deciding all run on the phone. The network is used for one thing only: the optional family link, which is off until the family turns it on. It sends one sealed message (battery, charging and the week of doses) that only the family's own code can open. Scanning, voice, alarms and storage work with no network.
 
+`DOCUMENTATION.md` describes the whole app: every feature, the language of touch, the rules the code keeps, privacy, how it is built and what has not been checked yet.
+
 ## What it does
 
 1. **The family shows each strip once.** The phone reads the label, the family reviews it and sets the prescribed times. The photos and the text read from them are saved.
 2. **At the saved time the phone rings.** It asks again every two minutes and stops thirty minutes after the saved time. The reminder offers: Find my medicine, I've taken it, I'm not sure, Remind me later.
 3. **Find my medicine opens the camera.** Every strip in view is followed on its own. The phone speaks where the due strip is. It also ticks, and the ticking gets faster as the due strip comes to the centre of the view. When the strip is centred there is one firm pulse. Held there, its answer opens by itself.
 4. **The phone asks "Are you taking it now?"** A dose is marked only by an answer to that question: a press on Yes, the sound of the tablet pushed out of its strip while the question is open, or in "Touch only" two knocks on the phone or a volume button. The phone says what it marked and Undo stays for a minute. Scanning, waiting and closing never mark anything.
-5. **By touch.** The phone has a vibration motor at each end. A tick at one end means move the phone that way, and the ticks come faster as the strip nears the middle. One long swelling buzz is yes, two sharp knocks is no, and each kind of medicine has its own rhythm. With "Touch only" on, the phone is silent and a whole dose is done by feel (`core/guide/FeelLanguage.kt`, `ui/shell/Feel.kt`).
+5. **By touch.** The phone has a vibration motor at each end. Each way to move the phone has its own pattern: one buzz for left, two for right, a tick and then a buzz for forward, a buzz and then a tick for back. Quick ticks mean the strip is under the phone. One long swelling buzz is yes, two sharp knocks is no, and each kind of medicine has its own rhythm. With "Touch only" on, the phone is silent and a whole dose is done by feel (`core/guide/FeelLanguage.kt`, `ui/shell/Feel.kt`).
 6. **The family far away.** With the family link on, a son or daughter opens one page and sees the week, and for each marked dose how the phone knows: seen and heard, strip seen, or button pressed. The relay that carries the message cannot open it (the `backend` folder).
 
 ## How a strip is recognised
@@ -27,7 +29,7 @@ The models all run on the phone: ML Kit reads the print, a MediaPipe hand model 
 
 ## What has been checked, and what has not
 
-- 560 unit tests in 64 classes pass, and 15 tests of the relay. `core/` is pure Kotlin. `PrintEvidenceTest` uses the text the phone really read from three strips, with its misreads. `HearTabletTest` uses real recordings of a tablet and of busy rooms.
+- 561 unit tests in 64 classes pass, and 15 tests of the relay. `core/` is pure Kotlin. `PrintEvidenceTest` uses the text the phone really read from three strips, with its misreads. `HearTabletTest` uses real recordings of a tablet and of busy rooms.
 - On the phone, the read-only check (`scanOnly`) passes its 3 fixtures. The four saved strip photos were each read again as one still picture and shown to the engine with that photo left out of what it learned from: the strict rule named 1 as itself and none wrongly. An earlier run on six photos named 6 of 6, but that was another set of photos and two rules had been added after a first run of 4 of 6. Neither is a live accuracy figure. The live camera gathers print over many frames and does better than one still; that has not been measured.
 - The touch language, the two knocks and hearing the tablet were checked from the phone's own records and with recorded sound. Nobody blind or deaf has tried them, and there is no figure for how often the phone hears a tablet rightly.
 - Not measured: live accuracy on moving strips, a real wrong-strength strip, glare, and alarm delivery with the screen off or in battery saver.

@@ -59,10 +59,14 @@ object Labels {
         "feelQuestion" to ("The question" to "सवाल"),
         "feelDone" to ("Marked" to "दर्ज"),
         "feelTitle" to ("Feel the way" to "छूकर रास्ता जानिए"),
-        "feelBody" to ("The phone also speaks through the hand, for when the screen cannot be seen or nothing can be heard. The end of the phone that ticks is the way to move it. One long buzz means yes, this is the one. Two sharp knocks mean no. Each kind of medicine has its own rhythm. Press each to feel it." to
-            "फ़ोन हाथ में कंपन से भी बताता है, जब स्क्रीन न दिखे या कुछ सुनाई न दे। फ़ोन का जो सिरा थरथराए, फ़ोन उसी तरफ़ ले जाइए। एक लंबा कंपन यानी हाँ, यही है। दो तेज़ झटके यानी नहीं। हर तरह की दवा की अपनी ताल है। हर बटन दबाकर महसूस कीजिए।"),
-        "feelBodyOne" to ("The phone also speaks through the hand. One long buzz means yes, this is the one. Two sharp knocks mean no. Each kind of medicine has its own rhythm. Press each to feel it." to
-            "फ़ोन हाथ में कंपन से भी बताता है। एक लंबा कंपन यानी हाँ, यही है। दो तेज़ झटके यानी नहीं। हर तरह की दवा की अपनी ताल है। हर बटन दबाकर महसूस कीजिए।"),
+        "feelBody" to ("The phone also speaks through the hand, for when the screen cannot be seen or nothing can be heard. One buzz: move the phone left. Two buzzes: right. A tick and then a buzz: forward. A buzz and then a tick: back. Quick ticks: the medicine is under the phone. One long, growing buzz means yes, this is the one. Two sharp knocks mean no. Each kind of medicine has its own rhythm. Press each to feel it." to
+            "फ़ोन हाथ में कंपन से भी बताता है, जब स्क्रीन न दिखे या कुछ सुनाई न दे। एक कंपन: फ़ोन बाईं ओर ले जाइए। दो कंपन: दाईं ओर। एक टिक और फिर कंपन: आगे। कंपन और फिर एक टिक: अपनी ओर। जल्दी-जल्दी टिक: दवा फ़ोन के नीचे है। एक लंबा, बढ़ता कंपन यानी हाँ, यही है। दो तेज़ झटके यानी नहीं। हर तरह की दवा की अपनी ताल है। हर बटन दबाकर महसूस कीजिए।"),
+        "feelBodyOne" to ("The phone also speaks through the hand. One buzz: move the phone left. Two buzzes: right. A tick and then a buzz: forward. A buzz and then a tick: back. Quick ticks: the medicine is under the phone. One long, growing buzz means yes, this is the one. Two sharp knocks mean no. Each kind of medicine has its own rhythm. Press each to feel it." to
+            "फ़ोन हाथ में कंपन से भी बताता है। एक कंपन: फ़ोन बाईं ओर ले जाइए। दो कंपन: दाईं ओर। एक टिक और फिर कंपन: आगे। कंपन और फिर एक टिक: अपनी ओर। जल्दी-जल्दी टिक: दवा फ़ोन के नीचे है। एक लंबा, बढ़ता कंपन यानी हाँ, यही है। दो तेज़ झटके यानी नहीं। हर तरह की दवा की अपनी ताल है। हर बटन दबाकर महसूस कीजिए।"),
+        "feelLeft" to ("Left" to "बाएँ"),
+        "feelRight" to ("Right" to "दाएँ"),
+        "feelForward" to ("Forward" to "आगे"),
+        "feelBack" to ("Back" to "पीछे"),
         "feelTop" to ("Top end" to "ऊपर का सिरा"),
         "feelBottom" to ("Bottom end" to "नीचे का सिरा"),
         "feelYes" to ("Yes" to "हाँ"),

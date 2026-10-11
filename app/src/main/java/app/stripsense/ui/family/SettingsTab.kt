@@ -114,9 +114,19 @@ private fun FeelCard(state: AppState) {
         @Composable fun Try(key: String, felt: app.stripsense.core.guide.Felt, modifier: Modifier) =
             OutlinedButton(onClick = { Feel.play(context, felt) }, modifier = modifier.heightIn(min = 52.dp), contentPadding = PaddingValues(horizontal = 6.dp)) { Text(Labels.get(key, lang), maxLines = 1) }
         val language = app.stripsense.core.guide.FeelLanguage
+        // The four ways to move the phone, exactly as they are felt during a scan.
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Try("feelLeft", language.pull(app.stripsense.core.guide.Toward.LEFT, 1f), Modifier.weight(1f))
+            Try("feelRight", language.pull(app.stripsense.core.guide.Toward.RIGHT, 1f), Modifier.weight(1f))
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Try("feelForward", language.pull(app.stripsense.core.guide.Toward.AWAY, 1f), Modifier.weight(1f))
+            Try("feelBack", language.pull(app.stripsense.core.guide.Toward.CLOSER, 1f), Modifier.weight(1f))
+        }
         if (two) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Try("feelTop", language.pull(app.stripsense.core.guide.Toward.AWAY, 1f).let { it.copy(top = app.stripsense.core.guide.Buzz.beats(255, 120, 60, 60, 60)) }, Modifier.weight(1f))
-            Try("feelBottom", language.pull(app.stripsense.core.guide.Toward.CLOSER, 1f).let { it.copy(bottom = app.stripsense.core.guide.Buzz.beats(255, 120, 60, 60, 60)) }, Modifier.weight(1f))
+            // One motor alone, for finding out which end is which.
+            Try("feelTop", app.stripsense.core.guide.Felt(app.stripsense.core.guide.Buzz.beats(255, 120, 60, 60, 60), null), Modifier.weight(1f))
+            Try("feelBottom", app.stripsense.core.guide.Felt(null, app.stripsense.core.guide.Buzz.beats(255, 120, 60, 60, 60)), Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Try("feelYes", language.yes(), Modifier.weight(1f))

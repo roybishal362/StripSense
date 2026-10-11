@@ -42,6 +42,17 @@ object Homing {
 
     fun intervalMs(closeness: Float): Long = (FAR_MS - (FAR_MS - NEAR_MS) * closeness.coerceIn(0f, 1f)).toLong()
 
+    /**
+     * How soon a pattern that takes [patternMs] comes again: sooner as the strip nears the middle, and never before
+     * it has ended and the hand has had a rest about as long as the pattern itself. A plain tick can come every
+     * 130 ms. A tick and a buzz begun again that soon ran into each other, and every way to move felt the same.
+     */
+    fun periodMs(closeness: Float, patternMs: Long): Long =
+        maxOf(intervalMs(closeness), patternMs + patternMs.coerceIn(MIN_REST_MS, MAX_REST_MS))
+
+    const val MIN_REST_MS = 90L
+    const val MAX_REST_MS = 300L
+
     fun locked(closeness: Float): Boolean = closeness >= LOCK
 
     /**

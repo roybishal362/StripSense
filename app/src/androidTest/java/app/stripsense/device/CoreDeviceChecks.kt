@@ -470,7 +470,7 @@ class CoreDeviceChecks : Instrumentation() {
                     app.stripsense.ui.shell.Feel.play(targetContext, felt)
                     Thread.sleep(1500)
                 }
-                out.append("then yes, no, heartbeat, top end, bottom end, right\n")
+                out.append("then yes, no, heartbeat, forward, back, right\n")
                 runOnMainSync { state.go(app.stripsense.Screen.TODAY) }
                 Thread.sleep(500)
                 finish(Activity.RESULT_OK, Bundle().apply { putString("stream", out.toString()) })

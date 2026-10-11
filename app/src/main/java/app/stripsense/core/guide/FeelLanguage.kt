@@ -25,6 +25,35 @@ data class Buzz(val times: List<Long>, val strengths: List<Int>) {
 
 /** A message felt in the hand. The phone has a motor at each end; null means that end stays still. */
 data class Felt(val top: Buzz?, val bottom: Buzz?) {
+    /** How long the whole message takes. */
+    val lasts: Long get() = maxOf(top?.lasts ?: 0, bottom?.lasts ?: 0)
+
+    /**
+     * The message as one motor plays it, and as a hand feels it that cannot tell the two ends apart: at each
+     * moment the stronger of the two ends. A phone with one motor is given this.
+     */
+    fun merged(): Buzz? {
+        val a = top ?: return bottom
+        val b = bottom ?: return a
+        if (a == b) return a
+        fun edges(buzz: Buzz) = buzz.times.runningFold(0L) { at, ms -> at + ms }
+        fun strengthAt(buzz: Buzz, at: Long): Int {
+            var from = 0L
+            for (i in buzz.times.indices) { if (at < from + buzz.times[i]) return buzz.strengths[i]; from += buzz.times[i] }
+            return 0
+        }
+        val cuts = (edges(a) + edges(b)).distinct().sorted()
+        val times = ArrayList<Long>()
+        val strengths = ArrayList<Int>()
+        for (i in 0 until cuts.size - 1) {
+            val strength = maxOf(strengthAt(a, cuts[i]), strengthAt(b, cuts[i]))
+            val ms = cuts[i + 1] - cuts[i]
+            if (strengths.isNotEmpty() && strengths.last() == strength) times[times.size - 1] = times.last() + ms
+            else { times += ms; strengths += strength }
+        }
+        return Buzz(times, strengths)
+    }
+
     companion object { fun both(buzz: Buzz) = Felt(buzz, buzz) }
 }
 
@@ -32,8 +61,9 @@ data class Felt(val top: Buzz?, val bottom: Buzz?) {
  * What the phone says through the hand, for someone who cannot see the screen and where nothing can be heard.
  *
  * It is a small language, learned in a minute:
- * - a tick at one end of the phone: move the phone toward that end. The ticks come faster as the medicine comes nearer;
- * - one tick at both ends: it is to the left. Two ticks at both ends: it is to the right;
+ * - one buzz: move the phone left. Two buzzes: right;
+ * - a tick and then a buzz, running up the phone: forward. A buzz and then a tick, running down it: back;
+ * - plain quick ticks: the medicine is under the phone. They come faster as it nears the middle;
  * - one long, swelling buzz at both ends: yes, this is the one;
  * - two sharp knocks: no, not this one;
  * - a short tap and then a rising hum: the phone is asking "are you taking it now?" (answered by two knocks on the phone);
@@ -53,24 +83,39 @@ object FeelLanguage {
     fun no(): Felt = Felt.both(Buzz.beats(FULL, 110, 45, 45))
 
     /**
-     * Which way to move the phone to bring the medicine to the middle. The tick is always at full strength: with the
-     * camera open this phone plays vibrations at two thirds of their strength, and a soft tick was not felt at
-     * all. How near the medicine is, is told by how fast the ticks come (Homing.intervalMs), not by how hard.
+     * Which way to move the phone to bring the medicine to the middle. Each way has its own pattern, told apart by
+     * how many parts it has and how long they are. They used to differ only in which end of the phone ticked, and
+     * by one tick or two: tried in a hand on 11 October, all four felt the same.
+     * - left: one buzz. Right: two buzzes;
+     * - forward (away from the body): a tick and then a buzz. It runs up the phone, bottom end first;
+     * - back (toward the body): a buzz and then a tick. It runs down the phone, top end first.
+     * None of them is two short knocks (that is the no) or one plain tick (that is "nearer").
+     * Always at full strength: with the camera open this phone plays vibrations at two thirds of their strength,
+     * and a soft tick was not felt at all. How near the medicine is, is told by how soon the pattern comes again
+     * (Homing.periodMs), not by how hard it is.
      */
-    fun pull(toward: Toward, @Suppress("UNUSED_PARAMETER") closeness: Float): Felt {
-        val strength = FULL
-        // At one end the tick is longer: a click is felt everywhere, a short buzz is felt where it is.
-        val end = Buzz.beats(strength, 0, 70)
-        val tick = Buzz.beats(strength, 0, 35)
-        return when (toward) {
-            Toward.AWAY -> Felt(end, null)
-            Toward.CLOSER -> Felt(null, end)
-            Toward.LEFT -> Felt.both(tick)
-            Toward.RIGHT -> Felt.both(Buzz.beats(strength, 80, 35, 35))
-        }
+    fun pull(toward: Toward, @Suppress("UNUSED_PARAMETER") closeness: Float): Felt = when (toward) {
+        Toward.LEFT -> Felt.both(Buzz.beats(FULL, 0, BUZZ_MS))
+        Toward.RIGHT -> Felt.both(Buzz.beats(FULL, BETWEEN_MS, BUZZ_MS, BUZZ_MS))
+        Toward.AWAY -> Felt(
+            top = Buzz(listOf(TICK_MS + INSIDE_MS, BUZZ_MS), listOf(0, FULL)),
+            bottom = Buzz(listOf(TICK_MS, INSIDE_MS + BUZZ_MS), listOf(FULL, 0)))
+        Toward.CLOSER -> Felt(
+            top = Buzz(listOf(BUZZ_MS, INSIDE_MS + TICK_MS), listOf(FULL, 0)),
+            bottom = Buzz(listOf(BUZZ_MS + INSIDE_MS, TICK_MS), listOf(0, FULL)))
     }
 
-    /** A hand is moving toward the medicine: a plain tick at both ends. The ticks come faster as the finger comes nearer. */
+    private const val TICK_MS = 45L
+    private const val BUZZ_MS = 200L
+
+    /** The stillness between the tick and the buzz of one pattern, and between the two buzzes of "right". */
+    private const val INSIDE_MS = 80L
+    private const val BETWEEN_MS = 120L
+
+    /**
+     * The medicine is under the phone, or a hand is moving toward it: a plain tick at both ends. The ticks come
+     * faster as it comes nearer.
+     */
     fun nearer(@Suppress("UNUSED_PARAMETER") closeness: Float): Felt = Felt.both(Buzz.beats(FULL, 0, 40))
 
     /**

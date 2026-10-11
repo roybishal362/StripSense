@@ -39,14 +39,15 @@ object Feel {
     fun play(context: Context, felt: Felt, tick: Boolean = false) {
         val now = SystemClock.elapsedRealtime()
         if (tick && now < busyUntil) return
-        val lasts = maxOf(felt.top?.lasts ?: 0, felt.bottom?.lasts ?: 0)
+        val lasts = felt.lasts
         if (!tick) busyUntil = now + lasts + 120
         movingUntil = maxOf(movingUntil, now + lasts + 180)
         runCatching {
             val manager = manager(context)
             val ids = manager.vibratorIds
             if (ids.size < 2) {
-                (felt.top ?: felt.bottom)?.let { one(manager.defaultVibrator, effect(it)) }
+                // One motor plays both ends as one, so a tick at one end followed by a buzz at the other is still felt as that.
+                felt.merged()?.let { one(manager.defaultVibrator, effect(it)) }
                 return
             }
             val top = if (topMotor in ids) topMotor else ids[1]
