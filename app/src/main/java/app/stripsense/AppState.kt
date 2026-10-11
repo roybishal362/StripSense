@@ -58,7 +58,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-enum class Screen { TODAY, ASK, SCAN, MULTI_STRIP, NUMBERS, HEALTH, FAMILY, ANSWER, HELP, DEMO, TRIAL_PICK, CHECK, EVALUATION }
+enum class Screen { TODAY, ASK, SCAN, MULTI_STRIP, NUMBERS, HEALTH, FAMILY, ANSWER, HELP, DEMO, TRIAL_PICK, CHECK, EVALUATION, PLAY }
 
 enum class FamilyTab { LIST, ALARMS, TEACH, PEOPLE, FILES, SETTINGS }
 

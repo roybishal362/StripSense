@@ -95,6 +95,8 @@ data class StoreData(
     val topMotor: Int = 1,
     /** For someone who cannot hear the phone: it stays silent, says everything through the hand, and is answered by two knocks. */
     val touchOnly: Boolean = false,
+    /** The longest row of right answers in "Feel and tell" (core/play/FeelQuiz.kt). */
+    val feelBest: Int = 0,
     val lookCheckOn: Boolean = true,
     val secondReader: SecondReaderMode = SecondReaderMode.ON,
     val listSavedAtMillis: Long = 0,

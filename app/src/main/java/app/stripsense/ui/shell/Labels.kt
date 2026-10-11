@@ -63,6 +63,23 @@ object Labels {
             "फ़ोन हाथ में कंपन से भी बताता है, जब स्क्रीन न दिखे या कुछ सुनाई न दे। एक कंपन: फ़ोन बाईं ओर ले जाइए। दो कंपन: दाईं ओर। एक टिक और फिर कंपन: आगे। कंपन और फिर एक टिक: अपनी ओर। जल्दी-जल्दी टिक: दवा फ़ोन के नीचे है। एक लंबा, बढ़ता कंपन यानी हाँ, यही है। दो तेज़ झटके यानी नहीं। हर तरह की दवा की अपनी ताल है। हर बटन दबाकर महसूस कीजिए।"),
         "feelBodyOne" to ("The phone also speaks through the hand. One buzz: move the phone left. Two buzzes: right. A tick and then a buzz: forward. A buzz and then a tick: back. Quick ticks: the medicine is under the phone. One long, growing buzz means yes, this is the one. Two sharp knocks mean no. Each kind of medicine has its own rhythm. Press each to feel it." to
             "फ़ोन हाथ में कंपन से भी बताता है। एक कंपन: फ़ोन बाईं ओर ले जाइए। दो कंपन: दाईं ओर। एक टिक और फिर कंपन: आगे। कंपन और फिर एक टिक: अपनी ओर। जल्दी-जल्दी टिक: दवा फ़ोन के नीचे है। एक लंबा, बढ़ता कंपन यानी हाँ, यही है। दो तेज़ झटके यानी नहीं। हर तरह की दवा की अपनी ताल है। हर बटन दबाकर महसूस कीजिए।"),
+        "playTitle" to ("Play" to "खेल"),
+        "playOpen" to ("Play" to "खेलिए"),
+        "plantTitle" to ("Pattu, your plant" to "पत्तू, आपका पौधा"),
+        "pattuTalk" to ("Talk to Pattu" to "पत्तू से बात कीजिए"),
+        "pattuTap" to ("Tap Pattu to hear it." to "पत्तू को छूइए, वह बोलेगा।"),
+        "feelGameTitle" to ("Feel and tell" to "छूकर बताइए"),
+        "feelGameBody" to ("The phone plays a pattern in your hand. Say what it was. It is the same language the phone uses to lead you to your medicine." to
+            "फ़ोन आपके हाथ में एक ताल बजाएगा। बताइए वह क्या थी। दवा तक ले जाने के लिए फ़ोन यही भाषा बोलता है।"),
+        "feelGameStart" to ("Start" to "शुरू कीजिए"),
+        "feelGameAgain" to ("Feel it again" to "फिर महसूस कीजिए"),
+        "feelGameBest" to ("Best: {n} in a row" to "सबसे अच्छा: लगातार {n}"),
+        "feelGameRow" to ("{n} in a row" to "लगातार {n}"),
+        "lowTitle" to ("Running low" to "दवा कम बची है"),
+        "stockField" to ("Tablets left now (leave empty if not counted)" to "अभी कितनी गोलियाँ बची हैं (न गिनी हों तो खाली छोड़ें)"),
+        "courseField" to ("For how many days did the doctor say? (leave empty if it goes on)" to "डॉक्टर ने कितने दिन के लिए कहा है? (चलती रहे तो खाली छोड़ें)"),
+        "supplyHint" to ("The phone counts down by itself each time a dose is marked, and tells you before it runs out." to
+            "हर खुराक दर्ज होने पर फ़ोन ख़ुद गिनती घटाता है, और ख़त्म होने से पहले बता देता है।"),
         "feelLeft" to ("Left" to "बाएँ"),
         "feelRight" to ("Right" to "दाएँ"),
         "feelForward" to ("Forward" to "आगे"),

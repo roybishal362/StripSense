@@ -94,6 +94,7 @@ class Store(private val dir: File, val cipher: StoreCipher?, private val fresh: 
     fun setLookCheck(on: Boolean) = change { it.copy(lookCheckOn = on) }
     fun setTopMotor(id: Int) = change { it.copy(topMotor = id) }
     fun setTouchOnly(on: Boolean) = change { it.copy(touchOnly = on) }
+    fun setFeelBest(row: Int) = change { if (row > it.feelBest) it.copy(feelBest = row) else it }
     /** Switching it off also forgets how loud a tablet sounded, so switching it on again starts from the beginning. */
     fun setHearTablet(on: Boolean) = change { it.copy(hearTablet = on, tabletSound = if (on) it.tabletSound else 0f) }
 

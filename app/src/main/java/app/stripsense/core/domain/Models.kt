@@ -48,6 +48,12 @@ data class Medicine(
     val purpose: String = "",
     /** Whose medicine it is: the id of a Profile, or empty for the first person. */
     val personId: String = "",
+    /** Tablets the family counted, and when they counted (see core/dose/Supply.kt). -1: not counted. */
+    val stock: Int = -1,
+    val stockAtMillis: Long = 0,
+    /** For how many days the doctor said, and the day it began (ISO date). 0: it goes on with no end. */
+    val courseDays: Int = 0,
+    val courseStart: String = "",
 )
 
 /** One line of print as ML Kit read it. Box in the upright image, in pixels. Never saved. */

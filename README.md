@@ -13,7 +13,10 @@ Reading, speaking and deciding all run on the phone. The network is used for one
 3. **Find my medicine opens the camera.** Every strip in view is followed on its own. The phone speaks where the due strip is. It also ticks, and the ticking gets faster as the due strip comes to the centre of the view. When the strip is centred there is one firm pulse. Held there, its answer opens by itself.
 4. **The phone asks "Are you taking it now?"** A dose is marked only by an answer to that question: a press on Yes, the sound of the tablet pushed out of its strip while the question is open, or in "Touch only" two knocks on the phone or a volume button. The phone says what it marked and Undo stays for a minute. Scanning, waiting and closing never mark anything.
 5. **By touch.** The phone has a vibration motor at each end. Each way to move the phone has its own pattern: one buzz for left, two for right, a tick and then a buzz for forward, a buzz and then a tick for back. Quick ticks mean the strip is under the phone. One long swelling buzz is yes, two sharp knocks is no, and each kind of medicine has its own rhythm. With "Touch only" on, the phone is silent and a whole dose is done by feel (`core/guide/FeelLanguage.kt`, `ui/shell/Feel.kt`).
-6. **The family far away.** With the family link on, a son or daughter opens one page and sees the week, and for each marked dose how the phone knows: seen and heard, strip seen, or button pressed. The relay that carries the message cannot open it (the `backend` folder).
+6. **It counts the tablets and follows the course.** The family counts once ("30 tablets") and says for how many days the doctor prescribed. Every marked dose takes one away. The phone says "Day 3 of 5", and days ahead it says "Only 2 days left. Tell your family to buy more", on Today and in the alarm itself (`core/dose/Supply.kt`).
+7. **Pattu, a plant that grows with every dose.** "Patta" means both a leaf and a strip of tablets. A button press grows a bud, a strip the camera checked grows a leaf, a tablet the phone heard grows a flower, so the row of days cannot be grown by pressing a button. Pattu has a face and a mood, and talks when tapped (`core/play/Plant.kt`).
+8. **Feel and tell, a game.** The phone plays a pattern in the hand and the person says what it was: yes or no, which medicine, which way. It is how the language of touch is learned (`core/play/FeelQuiz.kt`).
+9. **The family far away.** With the family link on, a son or daughter opens one page and sees the week, and for each marked dose how the phone knows: seen and heard, strip seen, or button pressed. The relay that carries the message cannot open it (the `backend` folder).
 
 ## How a strip is recognised
 
@@ -29,7 +32,7 @@ The models all run on the phone: ML Kit reads the print, a MediaPipe hand model 
 
 ## What has been checked
 
-- **561 unit tests in 64 classes pass, and 15 tests of the relay.** `core/` is pure Kotlin. `PrintEvidenceTest` uses the text the phone really read from three strips, with its misreads. `HearTabletTest` uses real recordings of a tablet and of busy rooms.
+- **582 unit tests in 68 classes pass, and 15 tests of the relay.** `core/` is pure Kotlin. `PrintEvidenceTest` uses the text the phone really read from three strips, with its misreads. `HearTabletTest` uses real recordings of a tablet and of busy rooms.
 - **Used with real strips through the whole event:** reading, refusing, several strips in view, spoken directions, a pointing finger, Hindi.
 - **No strip named wrongly in the checks on saved photos.** Each photo was read again as one still picture and left out of what the engine learned from. It named the right strip or declined: 6 of 6 on one set of photos, 1 of 4 on a stricter one, none wrong on either. One still is the hardest case, because the live camera gathers print over many frames.
 - **A whole dose run on the phone, from the alarm to the family page:** once answered as two knocks do, twice by the sound of a tablet played from a recording. The phone's own record shows each motor running alone.

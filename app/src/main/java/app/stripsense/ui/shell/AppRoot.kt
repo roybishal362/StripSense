@@ -68,7 +68,7 @@ fun AppRoot(state: AppState) {
         return
     }
     // Scan, Answer and Demo have a Back button to Today; the system back does the same.
-    val backToToday = screen == Screen.SCAN || screen == Screen.ANSWER || screen == Screen.DEMO || screen == Screen.TRIAL_PICK || screen == Screen.MULTI_STRIP || screen == Screen.EVALUATION
+    val backToToday = screen == Screen.SCAN || screen == Screen.ANSWER || screen == Screen.DEMO || screen == Screen.TRIAL_PICK || screen == Screen.MULTI_STRIP || screen == Screen.EVALUATION || screen == Screen.PLAY
     // First-run setup is left only by finishing it, so the family PIN is always chosen.
     BackHandler(enabled = screen != Screen.TODAY) { if (screen != Screen.CHECK) state.go(Screen.TODAY) }
 
@@ -96,6 +96,7 @@ fun AppRoot(state: AppState) {
                 Screen.NUMBERS -> TodayScreen(state)
                 Screen.FAMILY -> FamilyScreen(state)
                 Screen.HEALTH -> HealthScreen(state)
+                Screen.PLAY -> app.stripsense.ui.play.PlayScreen(state)
                 Screen.DEMO -> TodayScreen(state)
                 Screen.MULTI_STRIP -> MultiStripScreen(state)
                 Screen.TRIAL_PICK -> TodayScreen(state)
@@ -116,6 +117,7 @@ private fun titleKey(screen: Screen): String = when (screen) {
     Screen.NUMBERS -> "numbers"
     Screen.FAMILY -> "family"
     Screen.HEALTH -> "health"
+    Screen.PLAY -> "playTitle"
     Screen.DEMO -> "demoTitle"
     Screen.TRIAL_PICK -> "trialPickTitle"
     Screen.CHECK -> "setupTitle"

@@ -14,6 +14,8 @@ A phone app for an older person who cannot read the print on a medicine strip.
 - It can do a whole dose by touch alone, for someone who can neither read the strip nor hear the phone.
 - It can hear the tablet pushed out of the strip, so a dose needs no button.
 - Her family, far away, sees the week and how each dose is known.
+- It counts the tablets down by itself, follows the doctor's number of days, and says before a medicine runs out.
+- A plant called Pattu grows with every dose, and a game teaches the language of touch, so there is a reason to come back tomorrow at any age.
 
 It gives no medical advice. It never says a dose was taken. The word is "marked".
 
@@ -99,6 +101,26 @@ The phone has a vibration motor at each end and each can be driven by itself (`u
 - Share: the family link, and the week as a file.
 - An example week for showing the app on its first day. It is labelled as an example wherever it shows.
 
+### Staying with it, day after day
+An alarm and a check are not a habit. These three are what bring a person of any age back tomorrow.
+
+- **Tablets left, and the doctor's course** (`core/dose/Supply.kt`, `core/say/SupplyText.kt`).
+  - The family counts once ("30 tablets") and, if the doctor gave a number of days, enters it (Family, List, the medicine).
+  - Every marked dose takes one tablet away. An undone mark gives it back. Nobody has to count again.
+  - The phone says "9 tablets left, enough for 4 days" and "Day 3 of 5".
+  - At three days or fewer it says "Only 2 days left: 5 tablets. Tell your family to buy more", on Today and inside the dose's own alarm.
+  - If the tablets will not last the course it says so: "Tablets for 5 days, but 15 days of the course are left."
+  - When the course is over: "The 5 days the doctor said are over. Ask the doctor before you go on." It never says to take more or less.
+- **Pattu, the plant** (`core/play/Plant.kt`). "Patta" means both a leaf and a strip of tablets.
+  - It grows by how the phone knows about each dose: a button press grows a bud, a strip the camera checked grows a leaf, a tablet the phone heard grows a flower. A row of days cannot be grown by pressing a button.
+  - It counts full days in a row. An early morning before the first dose neither adds to the row nor breaks it.
+  - It has a face and a mood: it looks at you when a dose is due, beams when the day is done, droops after a missed dose, sleeps at night. Tapped, it says a line out loud. It is cheerful and never scolds.
+  - "Talk to Pattu" opens the app's own spoken question.
+- **Feel and tell** (`core/play/FeelQuiz.kt`). The phone plays a pattern in the hand and the person says what it was.
+  - It starts with yes or no, then which medicine, then which way to move, then any of them.
+  - A wrong answer plays the same pattern again with its name. That is how it is learned.
+  - It plays exactly the patterns the scan and a real dose play, so playing the game is practising the dose.
+
 ### Always
 - Help is on every screen.
 - English and Hindi, for the screen and the voice.
@@ -154,6 +176,7 @@ app/src/main/java/app/stripsense/
     teach/          drafting and checking a label when a strip is taught
     dose/           dose times, the question, reminders, the example week
     hear/           finding a tablet in the microphone's samples
+    play/           Pattu the plant, and the game "Feel and tell"
     say/            every sentence, in English and Hindi
     voice/          understanding a spoken request
     report/         the week, as a view and as a file
@@ -227,7 +250,8 @@ Other switches: `stateSummary`, `feelWithCamera`, `knockNumbers`, `hearSeconds`,
 
 ## 10. What has been checked
 
-- **561 unit tests in 64 classes pass, and 15 tests of the relay.** They cover everything in `core/`. `PrintEvidenceTest` uses text the phone really read from three strips, with its misreads. `HearTabletTest` uses real recordings of a tablet and of busy rooms.
+- **582 unit tests in 68 classes pass, and 15 tests of the relay.** They cover everything in `core/`.
+- **The four ways to move agree everywhere.** `SteerAgreesTest` pins the place of the strip in the picture to what is said in English and Hindi and to what is felt, for left, right, forward and back. The arrow on the screen is drawn from the same value. `PrintEvidenceTest` uses text the phone really read from three strips, with its misreads. `HearTabletTest` uses real recordings of a tablet and of busy rooms.
 - **Used with real strips through the whole event:** reading, refusing, several strips in view, spoken directions, a pointing finger, Hindi.
 - **No strip named wrongly in the checks on saved photos.** Each photo was read again as one still picture and left out of what the engine learned from. It named the right strip or declined: 6 of 6 on one set of photos, 1 of 4 on a stricter one, none wrong on either. One still is the hardest case, because the live camera gathers print over many frames.
 - **A whole dose run on the phone, from the alarm to the family page.** Alarm, camera, question, answer, marked, sent to the family. Once answered as two knocks do, twice by the sound of a tablet played from a recording.

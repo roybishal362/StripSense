@@ -58,7 +58,10 @@ object ReminderNotifications {
         channels(context)
         if (!allowed(context)) return
         // Only the first alert announces the dose. Later ones ask; they never tell the person to take another tablet.
-        val text = if (item.attempt <= 1) Sentences.reminder(item.med, item.slot, lang) else Sentences.reminderFollowUp(item.med, item.slot, lang)
+        val asked = if (item.attempt <= 1) Sentences.reminder(item.med, item.slot, lang) else Sentences.reminderFollowUp(item.med, item.slot, lang)
+        // Days before a medicine runs out, or when its course is over, its own alarm says so: in time to buy more.
+        val supply = runCatching { app.stripsense.core.dose.Supply.of(item.med, AppStore.get(context).data.value.events, System.currentTimeMillis(), DoseEngine()) }.getOrNull()
+        val text = asked + supply?.takeIf { it.needsALook }?.let { app.stripsense.core.say.SupplyText.line(it, lang) }?.let { " $it" }.orEmpty()
         val notification = Notification.Builder(context, CHANNEL)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setContentTitle(Answers.nickname(item.med).get(lang) + " · " + Words.timeShown(item.slot.time, lang))

@@ -54,6 +54,10 @@ fun MedicineEditor(state: AppState, existing: Medicine?, defaultOwner: String? =
     var details by rememberSaveable { mutableStateOf(existing == null) }
     // Whose medicine it is. A new one belongs to the person whose turn it is on the phone.
     var owner by rememberSaveable { mutableStateOf(existing?.personId ?: defaultOwner ?: People.active(state.data)) }
+    // How many tablets are left by the count now, and for how many days the doctor said. Empty: not counted, or no end.
+    val stockShown = remember { existing?.let { app.stripsense.core.dose.Supply.of(it, state.data.events, state.now(), state.engine).left }?.toString().orEmpty() }
+    var stock by rememberSaveable { mutableStateOf(stockShown) }
+    var course by rememberSaveable { mutableStateOf(existing?.courseDays?.takeIf { it > 0 }?.toString().orEmpty()) }
     var ownerMenu by remember { mutableStateOf(false) }
     var asking by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
@@ -135,6 +139,12 @@ fun MedicineEditor(state: AppState, existing: Medicine?, defaultOwner: String? =
             }
         }
         if (details) field("medicineTimes", times) { times = it }()
+        // Counted once by the family. From here the phone counts down by itself and says days ahead when it is running out.
+        OutlinedTextField(stock, { stock = it.filter(Char::isDigit).take(4) }, label = { Text(Labels.get("stockField", lang)) }, enabled = !busy, singleLine = true,
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(course, { course = it.filter(Char::isDigit).take(3) }, label = { Text(Labels.get("courseField", lang)) }, enabled = !busy, singleLine = true,
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+        Text(Labels.get("supplyHint", lang), color = MaterialTheme.colorScheme.onSurfaceVariant)
         field("medicineNote", note) { note = it }()
         TextButton(onClick = { details = !details }, enabled = !busy) { Text(Labels.get(if (details) "editLess" else "editMore", lang)) }
         Row { Switch(active, { active = it }, enabled = !busy); Text(Labels.get("medicineActive", lang), Modifier.padding(12.dp)) }
@@ -157,7 +167,19 @@ fun MedicineEditor(state: AppState, existing: Medicine?, defaultOwner: String? =
                 state.data.medicines.any { it.id != existing?.id && it.nickEn.equals(name.trim(), true) } -> errors = listOf(Labels.get("duplicateMedicineName", lang))
                 parsed is Csv.ReadResult.Bad -> errors = parsed.errors
                 parsed is Csv.ReadResult.Ok -> {
-                    val saved = parsed.medicines.single().copy(id = candidate.id, purpose = purpose, personId = owner)
+                    // A count that was not touched keeps the day it was made on; a new count starts from now.
+                    val counted = stock.toIntOrNull()
+                    val sameCount = existing != null && stock == stockShown
+                    val days = course.toIntOrNull() ?: 0
+                    val saved = parsed.medicines.single().copy(id = candidate.id, purpose = purpose, personId = owner,
+                        stock = when { counted == null -> -1; sameCount -> existing!!.stock; else -> counted },
+                        stockAtMillis = when { counted == null -> 0L; sameCount -> existing!!.stockAtMillis; else -> state.now() },
+                        courseDays = days,
+                        courseStart = when {
+                            days <= 0 -> ""
+                            existing != null && existing.courseDays == days && existing.courseStart.isNotEmpty() -> existing.courseStart
+                            else -> state.engine.dosingDate(state.now()).toString()
+                        })
                     val list = if (existing == null) state.store.data.value.medicines + saved
                         else state.store.data.value.medicines.map { if (it.id == existing.id) saved else it }
                     persist(list)
