@@ -15,7 +15,7 @@ A phone app for an older person who cannot read the print on a medicine strip.
 - It can hear the tablet pushed out of the strip, so a dose needs no button.
 - Her family, far away, sees the week and how each dose is known.
 - It counts the tablets down by itself, follows the doctor's number of days, and says before a medicine runs out.
-- A plant called Pattu grows with every dose, and a game teaches the language of touch, so there is a reason to come back tomorrow at any age.
+- A character called Pattu grows with every dose. There are points, levels, a row of days, a gift each day, a little chit chat and two games, so there is a reason to come back tomorrow at any age.
 
 It gives no medical advice. It never says a dose was taken. The word is "marked".
 
@@ -111,15 +111,22 @@ An alarm and a check are not a habit. These three are what bring a person of any
   - At three days or fewer it says "Only 2 days left: 5 tablets. Tell your family to buy more", on Today and inside the dose's own alarm.
   - If the tablets will not last the course it says so: "Tablets for 5 days, but 15 days of the course are left."
   - When the course is over: "The 5 days the doctor said are over. Ask the doctor before you go on." It never says to take more or less.
-- **Pattu, the plant** (`core/play/Plant.kt`). "Patta" means both a leaf and a strip of tablets.
-  - It grows by how the phone knows about each dose: a button press grows a bud, a strip the camera checked grows a leaf, a tablet the phone heard grows a flower. A row of days cannot be grown by pressing a button.
-  - It counts full days in a row. An early morning before the first dose neither adds to the row nor breaks it.
-  - It has a face and a mood: it looks at you when a dose is due, beams when the day is done, droops after a missed dose, sleeps at night. Tapped, it says a line out loud. It is cheerful and never scolds.
-  - "Talk to Pattu" opens the app's own spoken question.
-- **Feel and tell** (`core/play/FeelQuiz.kt`). The phone plays a pattern in the hand and the person says what it was.
-  - It starts with yes or no, then which medicine, then which way to move, then any of them.
-  - A wrong answer plays the same pattern again with its name. That is how it is learned.
-  - It plays exactly the patterns the scan and a real dose play, so playing the game is practising the dose.
+- **Pattu and the journey** (`core/play/Journey.kt`, `ui/play/`). Pattu is the app's character: a round little sprout. "Patta" means both a leaf and a strip of tablets.
+  - **Points** come from doses, by how the phone knows about each one: a button press 10, a strip the camera checked 20, a tablet the phone heard 30, and 20 more for a day with every dose marked. Points cannot be had by pressing a button over and over.
+  - **Levels**: Seed, Sprout, Bud, Bloom, Sparkle, Garden, Forest. Pattu is drawn as its level: it grows from a seed to a flower.
+  - **The row of full days**, with a flame, and the last seven days as dots. An early morning before the first dose neither adds to the row nor breaks it.
+  - **Today's goals** (mark every dose, let the phone check one strip, open today's gift) and **badges** to collect.
+  - Pattu breathes, blinks and hops. Its face is its mood: it looks at you when a dose is due, beams when the day is done, droops after a missed dose, sleeps at night. Tapped, it says a line out loud. It is cheerful and never scolds.
+  - **Five Pattus to open**: Sprout, Puppy, Kitten, Fairy and the Little devil doctor, one at each level from 1 to 5. All are the app's own drawings.
+  - When a dose is marked, confetti falls for a moment and the points are shown. It takes no touch, so Undo under it works as before.
+- **Today's gift** (`core/play/Gifts.kt`). When the day's medicine is on track, the person chooses a gift: a good thought, a movie, a book, an anime or a K-drama. The list is inside the app. The phone keeps what it gave and does not give the same thing twice until it has given them all.
+- **Today's chit chat** (`core/play/Chat.kt`, `core/play/PattuTalk.kt`). On a later day Pattu asks how the gift was, once. What was loved is offered first next time. On a day with nothing to ask about it asks how the day is going.
+  - The person can also type to Pattu. That is answered by the model on the phone from a book of knowledge: what Pattu gave, what the person said about it, what else it may suggest and how the journey stands.
+  - It is the one place where a model's own words are shown, and it is small talk only. A message about medicine or health is never sent to the model: Pattu says to use the Ask tab or ask the doctor. A reply is shown only when it is short and has nothing about medicine in it. Otherwise a fixed sentence is used.
+- **Games.**
+  - **Tic-tac-toe with Pattu** (`core/play/TicTacToe.kt`). Pattu plays better as the level goes up and cannot be beaten from level 5. The first win of a day earns points.
+  - **Today's code** (`core/play/DailyCode.kt`). One code for each day, the same for everyone, made from the date. Pattu plays it into the hand while its pads light up, and the person presses it back; it grows by one each time, with three hearts. With "eyes closed" the pads do not light up and it is only felt, for double points. Each weekday has its own kind of code.
+- **For whoever shows the app:** an example family (a wife and a baby with example medicines) can be added beside the example week, and taken out with one press.
 
 ### Always
 - Help is on every screen.
@@ -142,7 +149,7 @@ An alarm and a check are not a habit. These three are what bring a person of any
 3. A dose is marked only by an answer to the open question. The question opens only after the camera has checked the strip for a dose that is due.
 4. The phone says what it marked, and Undo stays for a minute.
 5. No sentence says "you took it". No medical advice.
-6. Every answer sentence is a fixed sentence from `core/say/Sentences.kt`. No model writes an answer.
+6. Every answer about a medicine is a fixed sentence from `core/say/`. No model writes one. The only words of a model that are ever shown are Pattu's small talk, and a question about medicine or health is never sent there.
 7. Gemma never decides a match and never marks a dose.
 8. The Help button is on every screen.
 
@@ -176,7 +183,7 @@ app/src/main/java/app/stripsense/
     teach/          drafting and checking a label when a strip is taught
     dose/           dose times, the question, reminders, the example week
     hear/           finding a tablet in the microphone's samples
-    play/           Pattu the plant, and the game "Feel and tell"
+    play/           the journey: points, levels, gifts, chit chat, the games, and which Pattu it is
     say/            every sentence, in English and Hindi
     voice/          understanding a spoken request
     report/         the week, as a view and as a file
@@ -250,7 +257,7 @@ Other switches: `stateSummary`, `feelWithCamera`, `knockNumbers`, `hearSeconds`,
 
 ## 10. What has been checked
 
-- **582 unit tests in 68 classes pass, and 15 tests of the relay.** They cover everything in `core/`.
+- **606 unit tests in 72 classes pass, and 15 tests of the relay.** They cover everything in `core/`.
 - **The four ways to move agree everywhere.** `SteerAgreesTest` pins the place of the strip in the picture to what is said in English and Hindi and to what is felt, for left, right, forward and back. The arrow on the screen is drawn from the same value. `PrintEvidenceTest` uses text the phone really read from three strips, with its misreads. `HearTabletTest` uses real recordings of a tablet and of busy rooms.
 - **Used with real strips through the whole event:** reading, refusing, several strips in view, spoken directions, a pointing finger, Hindi.
 - **No strip named wrongly in the checks on saved photos.** Each photo was read again as one still picture and left out of what the engine learned from. It named the right strip or declined: 6 of 6 on one set of photos, 1 of 4 on a stricter one, none wrong on either. One still is the hardest case, because the live camera gathers print over many frames.

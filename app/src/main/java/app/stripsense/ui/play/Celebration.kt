@@ -110,7 +110,7 @@ fun Celebration(state: AppState) {
         Column(Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 96.dp, start = 28.dp, end = 28.dp).fillMaxWidth()
             .shadow(16.dp, CardShape).clip(CardShape).background(Brush.linearGradient(listOf(Brand600, Brand900))).padding(18.dp),
             horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            PattuFigure(journey.stage, Mood.PROUD, Modifier.size(128.dp), hop = hop.value)
+            PattuFigure(journey.stage, Mood.PROUD, Modifier.size(128.dp), hop = hop.value, skin = skinOf(state, journey))
             Text(PlayText.gained(gained + if (full) Journeys.FULL_DAY else 0, lang), color = Color(0xFFFFCC4D), fontSize = 34.sp, fontWeight = FontWeight.ExtraBold)
             if (full) Text(PlayText.dayDone(journey.streak, lang), color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
             if (before.number < journey.level.number) Text(PlayText.levelUp(journey, lang), color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
@@ -131,7 +131,7 @@ fun JourneyStrip(state: AppState, now: Long) {
     Row(Modifier.fillMaxWidth().shadow(8.dp, CardShape, ambientColor = Color(0x33000000), spotColor = Color(0x33000000)).clip(CardShape)
         .background(Brush.linearGradient(listOf(Brand600, Brand900))).clickable { state.go(Screen.PLAY) }.padding(start = 8.dp, end = 16.dp, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        PattuFigure(journey.stage, mood, Modifier.size(92.dp))
+        PattuFigure(journey.stage, mood, Modifier.size(92.dp), skin = skinOf(state, journey))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Text(PlayText.level(journey, lang), color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold)
             Text(PlayText.pattu(mood, journey.streak, 0, lang), color = Color(0xFFD9F2E8), fontSize = 13.5.sp, lineHeight = 18.sp, maxLines = 2)

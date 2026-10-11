@@ -40,7 +40,7 @@ fun SettingsTab(state: AppState) {
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         // A tool for whoever is showing the app, not for the family: it appears only after a long press on the heading above.
-        if (state.presenter) { SectionTitle(Labels.get("secDemo", lang)); DemoTime(state); ExampleWeekCard(state) }
+        if (state.presenter) { SectionTitle(Labels.get("secDemo", lang)); DemoTime(state); ExampleWeekCard(state); ExampleFamilyCard(state) }
         SectionTitle(Labels.get("secPerson", lang))
         fun edit() { saved = false }
         SettingField("callNameEn", person.callEn, lang) { person = person.copy(callEn = it); edit() }
@@ -195,6 +195,22 @@ private fun ExampleWeekCard(state: AppState) {
         Text(Labels.get(if (shown) "exampleWeekOn" else "exampleWeekOff", lang), style = AppType.label)
         androidx.compose.material3.Button(onClick = { state.fillExampleWeek() }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text(Labels.get(if (shown) "exampleWeekAgain" else "exampleWeekFill", lang)) }
         if (shown) OutlinedButton(onClick = { state.store.removeExampleWeek() }, modifier = Modifier.fillMaxWidth()) { Text(Labels.get("exampleWeekRemove", lang)) }
+    }
+}
+
+/**
+ * For showing that the app is for a whole family: a wife and a baby with example medicines are added, each with a
+ * week behind them. Every one of their medicines carries the note "Example", and one press takes them out again.
+ */
+@Composable
+private fun ExampleFamilyCard(state: AppState) {
+    val lang = state.language
+    val shown = state.data.people.any { app.stripsense.core.dose.ExampleFamily.isExample(it.id) }
+    Column(Modifier.fillMaxWidth().clip(AppShapes.card).background(AppColors.surface).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(Labels.get("exampleFamilyTitle", lang), style = AppType.body.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold))
+        Text(Labels.get(if (shown) "exampleFamilyOn" else "exampleFamilyOff", lang), style = AppType.label)
+        if (!shown) androidx.compose.material3.Button(onClick = { state.addExampleFamily() }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text(Labels.get("exampleFamilyAdd", lang)) }
+        else OutlinedButton(onClick = { state.store.removeExampleFamily() }, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) { Text(Labels.get("exampleFamilyRemove", lang)) }
     }
 }
 

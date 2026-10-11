@@ -32,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
@@ -56,6 +57,15 @@ import app.stripsense.core.play.Liked
 import app.stripsense.core.play.Mark
 import app.stripsense.core.play.Mood
 import app.stripsense.core.play.PattuPlays
+import app.stripsense.core.play.PattuTalk
+import app.stripsense.core.play.Skin
+import app.stripsense.core.play.Skins
+import app.stripsense.ml.CallKind
+import app.stripsense.ml.GemmaInputs
+import app.stripsense.ml.GemmaReply
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import app.stripsense.core.say.PlayText
 import app.stripsense.ui.shell.Labels
 import app.stripsense.ui.theme.AppColors
@@ -146,27 +156,54 @@ private fun GiftView(gift: Gift, lang: String, modifier: Modifier = Modifier) {
  * it), or how the day is going. The answer is kept: what was loved is offered first next time.
  */
 @Composable
-internal fun ChatCard(state: AppState, mood: Mood, stage: Int) {
+internal fun ChatCard(state: AppState, journey: Journey, mood: Mood) {
     val lang = state.language
     val data = state.data
+    val scope = rememberCoroutineScope()
     val today = state.engine.dosingDate(state.now()).toString()
     val topic = Chats.topic(data.gifts, data.giftTalk, state.engine.dosingDate(state.now()), dayAnswered = data.chatDay == today, askedToday = data.chatGiftDay == today)
     // What Pattu said back, kept on the screen after the answer.
     var reply by remember { mutableStateOf<String?>(null) }
+    var typed by remember { mutableStateOf("") }
+    var thinking by remember { mutableStateOf(false) }
     fun answer(text: String) {
         reply = text
         state.speaker.speak(text, state.speechLanguage() == "hi")
         state.feel(FeelLanguage.nearer(1f), tick = true)
     }
-    if (topic == null && reply == null) return
+    // Free chit chat is answered by the model on the phone, from Pattu's book of knowledge (PattuTalk). A message
+    // about medicine or health is never sent to it, and a reply is shown only when it is short and has none in it.
+    fun send() {
+        val text = PattuTalk.message(typed)
+        if (text.isEmpty() || thinking) return
+        typed = ""
+        if (PattuTalk.aboutHealth(text)) { answer(PlayText.chatNotMine(lang)); return }
+        thinking = true
+        scope.launch {
+            val said = try {
+                if (!state.gemma.isFree()) null
+                else (state.gemma.ask(CallKind.CHAT, PattuTalk.knowledge(data.gifts, data.giftTalk, journey.streak, journey.level.name(lang), lang),
+                    GemmaInputs.typed(text), null, 15_000) as? GemmaReply.Text)?.let { PattuTalk.clean(it.text) }
+            } catch (e: Exception) { null } finally { thinking = false }
+            answer(said ?: PlayText.chatBusy(lang))
+        }
+    }
     Panel {
         PanelTitle(Labels.get("chatTitle", lang), lang)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            PattuFigure(stage, if (reply != null) Mood.HAPPY else mood, Modifier.size(64.dp))
-            Text(reply ?: topic?.let { PlayText.chatAsk(it, lang) }.orEmpty(), Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(AppColors.brand100).padding(14.dp),
+            PattuFigure(journey.stage, if (thinking) Mood.WAITING else if (reply != null) Mood.HAPPY else mood, Modifier.size(64.dp), skin = skinOf(state, journey))
+            Text(if (thinking) PlayText.tttThinking(lang) else reply ?: topic?.let { PlayText.chatAsk(it, lang) } ?: PlayText.chatOpen(lang),
+                Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(AppColors.brand100).padding(14.dp),
                 color = AppColors.ink, fontSize = if (lang == "hi") 18.sp else 17.sp, fontWeight = FontWeight.Bold, lineHeight = 24.sp)
         }
-        if (reply == null) when (topic) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(typed, { typed = it.take(240) }, placeholder = { Text(Labels.get("chatSay", lang)) }, singleLine = true, enabled = !thinking,
+                shape = RoundedCornerShape(18.dp), modifier = Modifier.weight(1f))
+            Button(onClick = { send() }, enabled = typed.isNotBlank() && !thinking, shape = AppShapes.button,
+                colors = ButtonDefaults.buttonColors(containerColor = AppColors.brand700, contentColor = Color.White),
+                modifier = Modifier.heightIn(min = 56.dp)) { Text(Labels.get("chatSend", lang), fontWeight = FontWeight.Bold) }
+        }
+        if (reply == null && !thinking) when (topic) {
             is ChatTopic.AboutGift -> Choices(Liked.entries.map { PlayText.liked(it, lang) }) { i ->
                 val liked = Liked.entries[i]
                 state.store.talkGift(Chats.entry(topic.given.gift, liked), today)
@@ -178,6 +215,34 @@ internal fun ChatCard(state: AppState, mood: Mood, stage: Int) {
                 answer(PlayText.dayReply(feel, lang))
             }
             null -> Unit
+        }
+    }
+}
+
+/** The Pattu the person chose, when their level has opened it. */
+internal fun skinOf(state: AppState, journey: Journey): Skin = Skins.of(state.data.skin, journey.level.number)
+
+/**
+ * Choosing which Pattu it is. Each one opens at a level, so there is always one more to play for; one that is not
+ * open yet is shown faint with the level it opens at.
+ */
+@Composable
+internal fun SkinsCard(state: AppState, journey: Journey) {
+    val lang = state.language
+    val chosen = skinOf(state, journey)
+    Panel {
+        PanelTitle(Labels.get("skinsTitle", lang), lang)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Skin.entries.forEach { skin ->
+                val open = Skins.open(skin, journey.level.number)
+                Column(Modifier.weight(1f).clip(RoundedCornerShape(18.dp)).background(if (skin == chosen) AppColors.brand100 else Color.Transparent)
+                    .clickable(enabled = open) { state.store.setSkin(skin.name); state.feel(FeelLanguage.nearer(1f), tick = true) }.padding(vertical = 8.dp, horizontal = 2.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally) {
+                    PattuFigure(journey.stage, Mood.HAPPY, Modifier.size(58.dp).alpha(if (open) 1f else 0.3f), still = true, skin = skin)
+                    Text(if (open) skin.name(lang) else PlayText.skinLocked(skin.level, lang), color = if (open) AppColors.ink else AppColors.ink3, fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, lineHeight = 14.sp, maxLines = 2)
+                }
+            }
         }
     }
 }
@@ -222,7 +287,7 @@ internal fun TicTacToeCard(state: AppState, journey: Journey) {
     Panel {
         PanelTitle(Labels.get("tttTitle", lang), lang) {
             PattuFigure(journey.stage, when { !board.over && board.turn == Mark.PATTU -> Mood.WAITING; board.winner == Mark.PATTU -> Mood.PROUD; board.winner == Mark.YOU -> Mood.SAD; else -> Mood.HAPPY },
-                Modifier.size(54.dp), still = true)
+                Modifier.size(54.dp), still = true, skin = skinOf(state, journey))
         }
         Text(when {
             board.over -> PlayText.tttEnd(board.winner, earned ?: 0, lang)

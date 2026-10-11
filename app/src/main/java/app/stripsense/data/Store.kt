@@ -109,6 +109,21 @@ class Store(private val dir: File, val cipher: StoreCipher?, private val fresh: 
         it.copy(giftTalk = it.giftTalk.filterNot { old -> old.substringBefore('|') == entry.substringBefore('|') } + entry, chatGiftDay = day)
     }
 
+    fun setSkin(name: String) = change { it.copy(skin = name) }
+
+    /** The example family (core/dose/ExampleFamily.kt), put in fresh each time so pressing twice never doubles it. */
+    fun addExampleFamily(people: List<Profile>, medicines: List<Medicine>) = change { d ->
+        val example = app.stripsense.core.dose.ExampleFamily::isExample
+        d.copy(people = d.people.filterNot { example(it.id) } + people, medicines = d.medicines.filterNot { example(it.id) } + medicines)
+    }
+
+    /** The example family taken out again, with everything recorded for it. Nobody real is touched. */
+    fun removeExampleFamily() = change { d ->
+        val example = app.stripsense.core.dose.ExampleFamily::isExample
+        d.copy(people = d.people.filterNot { example(it.id) }, medicines = d.medicines.filterNot { example(it.id) },
+            events = d.events.filterNot { example(it.medId) }, activePerson = if (example(d.activePerson)) "" else d.activePerson)
+    }
+
     /** How the person said their day is going, on [day]. */
     fun chatDay(day: String, feel: String) = change { it.copy(chatDay = day, chatFeel = feel) }
 

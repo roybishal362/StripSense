@@ -5,6 +5,7 @@ import app.stripsense.core.dose.PromptAnswer
 import app.stripsense.core.guide.Felt
 import app.stripsense.core.guide.FeelLanguage
 import app.stripsense.core.dose.ExampleWeek
+import app.stripsense.core.dose.ExampleFamily
 import app.stripsense.core.domain.People
 
 import app.stripsense.data.FamilyLink
@@ -163,6 +164,19 @@ class AppState(
         val real = data.events.filterNot { it.example }
         store.fillExampleWeek(People.all(data).flatMap { person ->
             ExampleWeek.build(People.medicines(data, person.id), real, System.currentTimeMillis(), engine) { newId() }
+        })
+    }
+
+    /**
+     * For showing the app: a wife and a baby with example medicines are added, and the example week is filled for
+     * everyone, so the new people have a week behind them too.
+     */
+    fun addExampleFamily() {
+        store.addExampleFamily(ExampleFamily.people(), ExampleFamily.medicines(now(), engine.dosingDate(System.currentTimeMillis())))
+        val all = store.data.value
+        val real = all.events.filterNot { it.example }
+        store.fillExampleWeek(People.all(all).flatMap { person ->
+            ExampleWeek.build(People.medicines(all, person.id), real, System.currentTimeMillis(), engine) { newId() }
         })
     }
     var reminderRequest by mutableStateOf<Pair<String, String>?>(null)

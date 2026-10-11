@@ -63,7 +63,17 @@ object Labels {
             "फ़ोन हाथ में कंपन से भी बताता है, जब स्क्रीन न दिखे या कुछ सुनाई न दे। एक कंपन: फ़ोन बाईं ओर ले जाइए। दो कंपन: दाईं ओर। एक टिक और फिर कंपन: आगे। कंपन और फिर एक टिक: अपनी ओर। जल्दी-जल्दी टिक: दवा फ़ोन के नीचे है। एक लंबा, बढ़ता कंपन यानी हाँ, यही है। दो तेज़ झटके यानी नहीं। हर तरह की दवा की अपनी ताल है। हर बटन दबाकर महसूस कीजिए।"),
         "feelBodyOne" to ("The phone also speaks through the hand. One buzz: move the phone left. Two buzzes: right. A tick and then a buzz: forward. A buzz and then a tick: back. Quick ticks: the medicine is under the phone. One long, growing buzz means yes, this is the one. Two sharp knocks mean no. Each kind of medicine has its own rhythm. Press each to feel it." to
             "फ़ोन हाथ में कंपन से भी बताता है। एक कंपन: फ़ोन बाईं ओर ले जाइए। दो कंपन: दाईं ओर। एक टिक और फिर कंपन: आगे। कंपन और फिर एक टिक: अपनी ओर। जल्दी-जल्दी टिक: दवा फ़ोन के नीचे है। एक लंबा, बढ़ता कंपन यानी हाँ, यही है। दो तेज़ झटके यानी नहीं। हर तरह की दवा की अपनी ताल है। हर बटन दबाकर महसूस कीजिए।"),
-        "playTitle" to ("Your journey" to "आपका सफ़र"),
+        "playTitle" to ("Journey" to "सफ़र"),
+        "chatSay" to ("Say something to Pattu" to "पत्तू से कुछ कहिए"),
+        "chatSend" to ("Send" to "भेजिए"),
+        "skinsTitle" to ("Choose your Pattu" to "अपना पत्तू चुनिए"),
+        "exampleFamilyTitle" to ("Example family" to "उदाहरण परिवार"),
+        "exampleFamilyOff" to ("Adds a wife and a baby with example medicines, to show that the app is for the whole family. One press takes them out again." to
+            "उदाहरण की दवाओं के साथ एक पत्नी और एक बच्चा जोड़ता है, यह दिखाने के लिए कि ऐप पूरे परिवार के लिए है। एक बार दबाने से वे हट जाते हैं।"),
+        "exampleFamilyOn" to ("An example wife and baby are on this phone. Their medicines carry the note \"Example\"." to
+            "इस फ़ोन पर उदाहरण की पत्नी और बच्चा हैं। उनकी दवाओं पर \"उदाहरण\" लिखा है।"),
+        "exampleFamilyAdd" to ("Add the example family" to "उदाहरण परिवार जोड़ें"),
+        "exampleFamilyRemove" to ("Take the example family out" to "उदाहरण परिवार हटाएँ"),
         "questsTitle" to ("Today's goals" to "आज के लक्ष्य"),
         "badgesTitle" to ("Badges" to "बिल्ले"),
         "giftTitle" to ("Today's gift" to "आज का तोहफ़ा"),

@@ -4,7 +4,7 @@ import app.stripsense.core.scan.SecondReader
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-enum class CallKind { VOICE, SECOND_READER, ENROLLMENT, LIVE_READER }
+enum class CallKind { VOICE, SECOND_READER, ENROLLMENT, LIVE_READER, CHAT }
 
 /** What one model call gave back (spec 07 section 6). */
 sealed interface GemmaReply {
@@ -42,7 +42,7 @@ class GemmaStats {
             times = (times + ms).takeLast(500),
         )
         _counts.value = when (kind) {
-            CallKind.VOICE -> c.copy(voice = c.voice.add())
+            CallKind.VOICE, CallKind.CHAT -> c.copy(voice = c.voice.add())
             CallKind.SECOND_READER, CallKind.LIVE_READER -> c.copy(reader = c.reader.add())
             CallKind.ENROLLMENT -> c.copy(enrollment = c.enrollment.add())
         }

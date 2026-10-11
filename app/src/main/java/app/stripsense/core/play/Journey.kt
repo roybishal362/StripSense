@@ -67,8 +67,9 @@ object Journeys {
     const val FULL_DAY = 20
 
     private val LEVELS = listOf(
-        Triple(0, "Seed", "बीज"), Triple(40, "Sprout", "अंकुर"), Triple(120, "Sapling", "पौधा"), Triple(260, "Bud", "कली"),
-        Triple(480, "Bloom", "फूल"), Triple(800, "Garden", "बगिया"), Triple(1300, "Forest", "वन"),
+        // The first five are what Pattu is drawn as: a seed, two leaves, a bud, a flower, a flower that shines.
+        Triple(0, "Seed", "बीज"), Triple(40, "Sprout", "अंकुर"), Triple(120, "Bud", "कली"), Triple(260, "Bloom", "फूल"),
+        Triple(480, "Sparkle", "चमक"), Triple(800, "Garden", "बगिया"), Triple(1300, "Forest", "वन"),
     )
 
     fun level(points: Int): Level {

@@ -112,6 +112,8 @@ data class StoreData(
     val chatGiftDay: String = "",
     val chatDay: String = "",
     val chatFeel: String = "",
+    /** Which Pattu the person chose (core/play/Skins.kt). Empty: the first one. */
+    val skin: String = "",
     val lookCheckOn: Boolean = true,
     val secondReader: SecondReaderMode = SecondReaderMode.ON,
     val listSavedAtMillis: Long = 0,

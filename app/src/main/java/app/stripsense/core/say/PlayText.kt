@@ -157,6 +157,15 @@ object PlayText {
         }
     }
 
+    /** With nothing to ask about: an open door. */
+    fun chatOpen(lang: String): String = if (lang == "hi") "अपने दिन के बारे में बताइए, या पूछिए कि क्या देखें।" else "Tell me about your day, or ask me what to watch."
+
+    /** When the model on the phone is busy or gave nothing that can be shown. */
+    fun chatBusy(lang: String): String = if (lang == "hi") "इस पर ज़रा सोचने दीजिए। थोड़ी देर में फिर पूछिए।" else "Let me think about that one. Ask me again in a moment."
+
+    /** Under a Pattu that is not open yet. */
+    fun skinLocked(level: Int, lang: String): String = if (lang == "hi") "स्तर $level" else "Level $level"
+
     /** When the person asks Pattu about medicines or health: it does not answer, and says where to ask. */
     fun chatNotMine(lang: String): String =
         if (lang == "hi") "मैं सिर्फ़ फ़िल्मों, किताबों और आपके दिन की बात करता हूँ। दवा के बारे में \"पूछिए\" टैब या अपने डॉक्टर से पूछिए।"

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -57,9 +58,6 @@ import app.stripsense.core.domain.People
 import app.stripsense.core.guide.FeelLanguage
 import app.stripsense.core.play.Badge
 import app.stripsense.core.play.DayState
-import app.stripsense.core.play.FeelItem
-import app.stripsense.core.play.FeelQuiz
-import app.stripsense.core.play.FeelRound
 import app.stripsense.core.play.Journey
 import app.stripsense.core.play.Journeys
 import app.stripsense.core.play.codeRecord
@@ -97,12 +95,13 @@ fun PlayScreen(state: AppState) {
     val now = state.now()
     val journey = remember(data, now / 60_000) { journeyOf(state, now) }
     val mood = Journeys.mood(journey, state.engine.local(now).hour)
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Spacer(Modifier.height(2.dp))
         Hero(state, journey, mood, example = data.events.any { it.example })
+        SkinsCard(state, journey)
         StreakCard(journey, lang)
         GiftCard(state, journey)
-        ChatCard(state, mood, journey.stage)
+        ChatCard(state, journey, mood)
         TicTacToeCard(state, journey)
         CodeCard(state, journey)
         QuestsCard(journey, lang)
@@ -137,7 +136,7 @@ private fun Hero(state: AppState, journey: Journey, mood: app.stripsense.core.pl
         Text(PlayText.pattu(mood, journey.streak, turn, lang), color = AppColors.ink, fontSize = if (lang == "hi") 18.sp else 17.sp, fontWeight = FontWeight.Bold,
             lineHeight = 24.sp, textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 8.dp).clip(RoundedCornerShape(20.dp)).background(Color.White).clickable(remember { MutableInteractionSource() }, null) { tap() }.padding(horizontal = 16.dp, vertical = 12.dp))
-        PattuFigure(journey.stage, mood, Modifier.size(210.dp).clickable(remember { MutableInteractionSource() }, null) { tap() }, hop = hop.value)
+        PattuFigure(journey.stage, mood, Modifier.size(210.dp).clickable(remember { MutableInteractionSource() }, null) { tap() }, hop = hop.value, skin = skinOf(state, journey))
         Text(PlayText.level(journey, lang), color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
         Spacer(Modifier.height(8.dp))
         Bar(journey.levelProgress, Modifier.fillMaxWidth().height(12.dp), track = Color(0x33FFFFFF), fill = Color(0xFFFFCC4D))
@@ -257,78 +256,6 @@ private fun BadgesCard(journey: Journey, lang: String) {
                     }
                 }
                 repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
-            }
-        }
-    }
-}
-
-/** "Feel and tell": practice for the code. The phone plays one pattern and the person says what it was. */
-@Composable
-private fun FeelGame(state: AppState) {
-    val lang = state.language
-    val random = remember { kotlin.random.Random(System.nanoTime()) }
-    var row by remember { mutableIntStateOf(0) }
-    var round by remember { mutableStateOf<FeelRound?>(null) }
-    var said by remember { mutableStateOf<String?>(null) }
-    var right by remember { mutableStateOf(true) }
-    // Raised for every new question and every "again": two questions with the same answer are still two plays.
-    var plays by remember { mutableIntStateOf(0) }
-    LaunchedEffect(plays) {
-        val now = round ?: return@LaunchedEffect
-        delay(800)
-        state.feel(FeelQuiz.felt(now.answer))
-    }
-    fun say(text: String) {
-        said = text
-        state.speaker.speak(text, state.speechLanguage() == "hi")
-    }
-    fun pick(choice: FeelItem) {
-        val now = round ?: return
-        if (choice == now.answer) {
-            row++
-            right = true
-            state.store.setFeelBest(row)
-            say(PlayText.right(row, lang))
-            round = FeelQuiz.round(row, random, now.answer)
-        } else {
-            // The same pattern again, with its name: this is how it is learned.
-            row = 0
-            right = false
-            say(PlayText.wrong(now.answer, lang))
-        }
-        plays++
-    }
-    Panel {
-        PanelTitle(Labels.get("feelGameTitle", lang), lang) {
-            if (state.data.feelBest > 0) Text(Labels.fill("feelGameBest", lang, "n" to state.data.feelBest), color = AppColors.brand700, fontSize = 13.sp, fontWeight = FontWeight.Bold,
-                modifier = Modifier.clip(AppShapes.chip).background(AppColors.brand100).padding(horizontal = 10.dp, vertical = 4.dp))
-        }
-        val now = round
-        if (now == null) {
-            Text(Labels.get("feelGameBody", lang), style = AppType.forLanguage(AppType.body, lang).copy(color = AppColors.ink2))
-            OutlinedButton(onClick = { row = 0; said = null; round = FeelQuiz.round(0, random); plays++ }, shape = AppShapes.button,
-                modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp)) { Text(Labels.get("feelGameStart", lang), fontSize = 18.sp, fontWeight = FontWeight.Bold) }
-        } else {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(PlayText.ask(FeelQuiz.level(row), lang), Modifier.weight(1f), fontSize = if (lang == "hi") 26.sp else 24.sp, fontWeight = FontWeight.Bold, color = AppColors.ink)
-                Text(Labels.fill("feelGameRow", lang, "n" to row), color = AppColors.ink2, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-            }
-            said?.let {
-                Text(it, color = if (right) AppColors.okText else AppColors.dueText, fontSize = 18.sp, fontWeight = FontWeight.Bold,
-                    modifier = Modifier.fillMaxWidth().clip(AppShapes.card).background(if (right) AppColors.okBg else AppColors.dueBg).padding(14.dp))
-            }
-            now.choices.chunked(2).forEach { pair ->
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    pair.forEach { choice ->
-                        Button(onClick = { pick(choice) }, shape = AppShapes.button,
-                            colors = ButtonDefaults.buttonColors(containerColor = AppColors.brand700, contentColor = Color.White),
-                            modifier = Modifier.weight(1f).heightIn(min = 68.dp)) { Text(choice.name(lang), fontSize = 19.sp, fontWeight = FontWeight.Bold) }
-                    }
-                    if (pair.size == 1) Spacer(Modifier.weight(1f).width(0.dp))
-                }
-            }
-            OutlinedButton(onClick = { plays++ }, shape = AppShapes.button, modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp)) {
-                Text(Labels.get("feelGameAgain", lang), fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
         }
     }

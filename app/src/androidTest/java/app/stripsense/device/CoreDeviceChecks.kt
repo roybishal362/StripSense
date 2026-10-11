@@ -369,6 +369,20 @@ class CoreDeviceChecks : Instrumentation() {
             } catch (e: Throwable) { finish(Activity.RESULT_CANCELED, Bundle().apply { putString("stream", "FAIL state: " + e.javaClass.simpleName + ": " + e.message + "\n") }) }
             return
         }
+        // The example family, put in or taken out as the presenter's button does it. Counts only.
+        checkArgs.getString("exampleFamily")?.let { what ->
+            try {
+                startActivitySync(android.content.Intent(targetContext, app.stripsense.MainActivity::class.java).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                Thread.sleep(1500)
+                val state = app.stripsense.AppGraph.state(targetContext.applicationContext)
+                runOnMainSync { if (what == "remove") state.store.removeExampleFamily() else state.addExampleFamily() }
+                state.store.awaitSaved()
+                val data = state.store.data.value
+                finish(Activity.RESULT_OK, Bundle().apply { putString("stream", "people " + People.all(data).size + ", medicines " + data.medicines.size +
+                    ", of them example " + data.medicines.count { app.stripsense.core.dose.ExampleFamily.isExample(it.id) } + ", example dose records " + data.events.count { it.example } + "\n") })
+            } catch (e: Throwable) { finish(Activity.RESULT_CANCELED, Bundle().apply { putString("stream", "FAIL example family: " + e.javaClass.simpleName + ": " + e.message + "\n") }) }
+            return
+        }
         // The example week, put in or taken out as the presenter's button does it, and sent to the family's page at once.
         checkArgs.getString("exampleWeek")?.let { what ->
             try {
