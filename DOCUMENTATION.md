@@ -112,7 +112,7 @@ An alarm and a check are not a habit. These three are what bring a person of any
   - If the tablets will not last the course it says so: "Tablets for 5 days, but 15 days of the course are left."
   - When the course is over: "The 5 days the doctor said are over. Ask the doctor before you go on." It never says to take more or less.
 - **Pattu and the journey** (`core/play/Journey.kt`, `ui/play/`). Pattu is the app's character: a round little sprout. "Patta" means both a leaf and a strip of tablets.
-  - **Points** come from doses, by how the phone knows about each one: a button press 10, a strip the camera checked 20, a tablet the phone heard 30, and 20 more for a day with every dose marked. Points cannot be had by pressing a button over and over.
+  - **Points** come from doses, by how the phone knows about each one: a button press 10, a strip the camera checked 20, a tablet the phone heard 30, and 20 more for a day with every dose marked. A press earns the least; what the phone itself saw or heard earns more.
   - **Levels**: Seed, Sprout, Bud, Bloom, Sparkle, Garden, Forest. Pattu is drawn as its level: it grows from a seed to a flower.
   - **The row of full days**, with a flame, and the last seven days as dots. An early morning before the first dose neither adds to the row nor breaks it.
   - **Today's goals** (mark every dose, let the phone check one strip, open today's gift) and **badges** to collect.
