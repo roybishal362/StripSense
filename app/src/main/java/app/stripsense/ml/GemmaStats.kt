@@ -1,10 +1,10 @@
 package app.stripsense.ml
 
-import app.stripsense.core.SecondReader
+import app.stripsense.core.scan.SecondReader
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-enum class CallKind { VOICE, SECOND_READER }
+enum class CallKind { VOICE, SECOND_READER, ENROLLMENT, LIVE_READER }
 
 /** What one model call gave back (spec 07 section 6). */
 sealed interface GemmaReply {
@@ -20,6 +20,7 @@ data class KindStats(val calls: Int = 0, val failures: Int = 0, val timeouts: In
 data class GemmaCounts(
     val voice: KindStats = KindStats(),
     val reader: KindStats = KindStats(),
+    val enrollment: KindStats = KindStats(),
     val agreed: Int = 0,
     val notAgreed: Int = 0,
     val unreadable: Int = 0,
@@ -40,7 +41,11 @@ class GemmaStats {
             timeouts = timeouts + if (reply is GemmaReply.TimedOut) 1 else 0,
             times = (times + ms).takeLast(500),
         )
-        _counts.value = if (kind == CallKind.VOICE) c.copy(voice = c.voice.add()) else c.copy(reader = c.reader.add())
+        _counts.value = when (kind) {
+            CallKind.VOICE -> c.copy(voice = c.voice.add())
+            CallKind.SECOND_READER, CallKind.LIVE_READER -> c.copy(reader = c.reader.add())
+            CallKind.ENROLLMENT -> c.copy(enrollment = c.enrollment.add())
+        }
     }
 
     /** Second-reader outcome: agreed, not_agreed or unreadable. The reply kept is a strength, at most 60 characters. */

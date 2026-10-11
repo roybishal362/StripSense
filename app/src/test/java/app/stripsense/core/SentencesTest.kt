@@ -1,5 +1,15 @@
 package app.stripsense.core
 
+import app.stripsense.core.domain.*
+import app.stripsense.core.text.*
+import app.stripsense.core.scan.*
+import app.stripsense.core.teach.*
+import app.stripsense.core.guide.*
+import app.stripsense.core.dose.*
+import app.stripsense.core.say.*
+import app.stripsense.core.voice.*
+import app.stripsense.core.report.*
+
 import app.stripsense.core.Fixtures.M1
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

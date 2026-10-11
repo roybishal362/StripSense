@@ -12,6 +12,8 @@ import com.google.ai.edge.litertlm.Message
 import com.google.ai.edge.litertlm.ResponseFormat
 import com.google.ai.edge.litertlm.SamplerConfig
 import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -21,7 +23,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -112,61 +113,74 @@ class Gemma(private val context: Context) {
     /** One call. It may be called from the main thread: the work moves to a background thread. */
     suspend fun ask(kind: CallKind, system: String, contents: Contents, schema: String?, timeoutMs: Long): GemmaReply {
         val engine = engine ?: return GemmaReply.Busy
-        if (_busy.value) return GemmaReply.Busy
-        return mutex.withLock {
-            withContext(Dispatchers.Default + NonCancellable) { // a caller that goes away must not skip the clean-up
-                val started = System.currentTimeMillis()
-                val conversation = runCatching {
-                    engine.createConversation(
-                        ConversationConfig(
-                            systemInstruction = Contents.of(system),
-                            samplerConfig = SamplerConfig(topK = 1, topP = 1.0, temperature = 0.0, seed = 0),
-                            enableResponseFormat = schema != null,
-                        ),
-                    )
-                }.getOrElse { return@withContext GemmaReply.Failed(it.message ?: "could not start") }
-                val call = scope.async { // the blocking call, on its own thread
+        if (_busy.value || !mutex.tryLock()) return GemmaReply.Busy
+        try {
+            if (_busy.value) return GemmaReply.Busy
+            return withContext(Dispatchers.Default + NonCancellable) {
+                val started = android.os.SystemClock.elapsedRealtime()
+                Logs.i("gemma ${kind.name.lowercase()} request started")
+                val stopRequested = AtomicBoolean(false)
+                val cancel = AtomicReference<(() -> Unit)?>(null)
+                _busy.value = true
+                // Conversation setup can also block in native code. The deadline covers all of it.
+                val call = scope.async {
                     runCatching {
-                        val reply: Message =
-                            if (schema != null) conversation.sendMessage(contents, responseFormat = ResponseFormat.json(schema))
-                            else conversation.sendMessage(Message.user(contents))
-                        reply.contents.contents.filterIsInstance<Content.Text>().joinToString("") { it.text }.trim()
+                        val conversation = engine.createConversation(
+                            ConversationConfig(
+                                systemInstruction = Contents.of(system),
+                                samplerConfig = SamplerConfig(topK = 1, topP = 1.0, temperature = 0.0, seed = 0),
+                                enableResponseFormat = schema != null,
+                            ),
+                        )
+                        val lifetime = Any()
+                        var open = true
+                        try {
+                            cancel.set { synchronized(lifetime) { if (open) conversation.cancelProcess() } }
+                            check(!stopRequested.get()) { "request expired during setup" }
+                            val reply: Message =
+                                if (schema != null) conversation.sendMessage(contents, responseFormat = ResponseFormat.json(schema))
+                                else conversation.sendMessage(Message.user(contents))
+                            reply.contents.contents.filterIsInstance<Content.Text>().joinToString("") { it.text }.trim()
+                        } finally {
+                            cancel.set(null)
+                            synchronized(lifetime) {
+                                open = false
+                                runCatching { conversation.close() }
+                            }
+                        }
                     }
                 }
-                val result = withTimeoutOrNull(timeoutMs) { call.await() } // the caller waits, with the limit
+                call.invokeOnCompletion { _busy.value = false }
+                val result = withTimeoutOrNull(timeoutMs.coerceAtLeast(1)) { call.await() }
                 if (result == null) {
-                    runCatching { conversation.cancelProcess() } // ask the model to stop
-                    withTimeoutOrNull(3_000) { call.join() } // give it time to return
-                }
-                if (call.isCompleted) {
-                    runCatching { conversation.close() }
-                } else {
-                    _busy.value = true // never close while the call runs
-                    call.invokeOnCompletion {
-                        runCatching { conversation.close() }
-                        _busy.value = false
-                    }
+                    stopRequested.set(true)
+                    // Cancellation itself is native work, so it must not hold up the caller either.
+                    scope.launch { runCatching { cancel.get()?.invoke() } }
                 }
                 val reply = when {
                     result == null -> GemmaReply.TimedOut
                     result.isSuccess -> GemmaReply.Text(result.getOrThrow())
                     else -> GemmaReply.Failed(result.exceptionOrNull()?.message ?: "error")
                 }
-                record(kind, System.currentTimeMillis() - started, reply)
+                record(kind, android.os.SystemClock.elapsedRealtime() - started, reply)
                 reply
             }
+        } finally {
+            mutex.unlock()
         }
     }
 
     /** A call with a fixed JSON shape. If the shape makes the call throw, it is switched off for the rest of the run. */
     suspend fun askJson(kind: CallKind, system: String, contents: Contents, schema: String, timeoutMs: Long): GemmaReply {
+        val started = android.os.SystemClock.elapsedRealtime()
         if (!formatOff) {
             val first = ask(kind, system, contents, schema, timeoutMs)
             if (first !is GemmaReply.Failed) return first
             formatOff = true
             Logs.i("gemma json shape off, plain replies from now on")
         }
-        return ask(kind, system, contents, null, timeoutMs)
+        val remaining = timeoutMs - (android.os.SystemClock.elapsedRealtime() - started)
+        return if (remaining > 0) ask(kind, system, contents, null, remaining) else GemmaReply.TimedOut
     }
 
     private fun record(kind: CallKind, ms: Long, reply: GemmaReply) {

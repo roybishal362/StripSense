@@ -1,5 +1,15 @@
 package app.stripsense.core
 
+import app.stripsense.core.domain.*
+import app.stripsense.core.text.*
+import app.stripsense.core.scan.*
+import app.stripsense.core.teach.*
+import app.stripsense.core.guide.*
+import app.stripsense.core.dose.*
+import app.stripsense.core.say.*
+import app.stripsense.core.voice.*
+import app.stripsense.core.report.*
+
 /** The list M1 to M5 of spec 01 section 7, and helpers that turn strings into OcrLines. */
 object Fixtures {
     private fun mg(v: String) = Strength(v, StrengthUnit.MG)

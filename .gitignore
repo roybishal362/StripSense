@@ -12,3 +12,8 @@
 .claude/
 CLAUDE.md
 AGENTS.md
+
+# The relay's own data (sealed messages) and Python caches stay on this laptop.
+backend/data/
+__pycache__/
+*.pyc

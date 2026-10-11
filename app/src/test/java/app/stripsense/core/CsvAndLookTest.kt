@@ -1,5 +1,15 @@
 package app.stripsense.core
 
+import app.stripsense.core.domain.*
+import app.stripsense.core.text.*
+import app.stripsense.core.scan.*
+import app.stripsense.core.teach.*
+import app.stripsense.core.guide.*
+import app.stripsense.core.dose.*
+import app.stripsense.core.say.*
+import app.stripsense.core.voice.*
+import app.stripsense.core.report.*
+
 import app.stripsense.core.Fixtures.M1
 import app.stripsense.core.Fixtures.M3
 import app.stripsense.data.DemoData
@@ -52,6 +62,57 @@ class CsvTest {
     @Test fun commaIsNotADecimalPoint() = assertEquals(null, Csv.strength("0,5 %"))
 
     @Test fun stoppedRowKeepsItsDate() = assertEquals("2026-10-01", ok(Csv.write(listOf(M3)))[0].stoppedOn)
+    @Test fun renamedNicknameDoesNotReuseItsOldId() {
+        val old = M1.copy(id = "fever-tablet")
+        val renamed = old.copy(nickEn = "fever-tablet")
+        assertEquals("fever-tablet-2", ok(Csv.write(listOf(renamed)), listOf(old)).single().id)
+    }
+
+    @Test fun newRowCannotStealAnExistingMedicineId() {
+        val old = M1.copy(id = "new-name")
+        val new = M1.copy(nickEn = "new name")
+        val imported = ok(Csv.write(listOf(new, old)), listOf(old))
+        assertEquals("new-name-2", imported[0].id)
+        assertEquals(old.id, imported[1].id)
+    }
+
+    @Test fun removedMedicinesHistoricalIdIsNotReused() {
+        val text = Csv.write(listOf(M1))
+        val result = Csv.read(text, reservedIds = setOf("fever-tablet")) as Csv.ReadResult.Ok
+        assertEquals("fever-tablet-2", result.medicines.single().id)
+    }
+
+    @Test fun currentNicknameKeepsItsIdEvenWithHistoricalMarks() {
+        val old = M1.copy(id = "fever-tablet")
+        val result = Csv.read(Csv.write(listOf(old)), listOf(old), setOf(old.id)) as Csv.ReadResult.Ok
+        assertEquals(old.id, result.medicines.single().id)
+    }
+
+    @Test fun malformedQuotesRejectTheEntireList() {
+        val valid = Csv.write(listOf(M1))
+        for (text in listOf(
+            valid.trimEnd() + "\"",
+            valid.replace("fever tablet", "fever \"tablet"),
+            valid.replace("fever tablet", "\"fever tablet\"oops"),
+        )) assertTrue(Csv.read(text) is Csv.ReadResult.Bad)
+    }
+
+    @Test fun wrongRowWidthRejectsTheEntireList() {
+        val valid = Csv.write(listOf(M1)).trimEnd()
+        assertTrue(Csv.read(valid + ",extra") is Csv.ReadResult.Bad)
+        assertTrue(Csv.read(valid.substringBeforeLast(',')) is Csv.ReadResult.Bad)
+    }
+
+    @Test fun duplicateHeaderIsRejected() {
+        val valid = Csv.write(listOf(M1))
+        assertTrue(Csv.read(valid.replace("colour", "colour,colour")) is Csv.ReadResult.Bad)
+    }
+
+    @Test fun quotedMultilineAndEscapedQuotesRoundTrip() {
+        val med = M1.copy(noteEn = "after food, then \"water\"\nask family", colour = Csv.DEFAULT_COLOUR)
+        assertEquals(listOf(med), ok(Csv.write(listOf(med)), listOf(med)))
+    }
+
 }
 
 class LookCheckTest {

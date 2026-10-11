@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StripSense family view</title>
+<style>
+  :root { --ink: #0f1a17; --paper: #f2f4f3; --card: #ffffff; --green: #0c6b50; --amber: #9a5b00; --red: #b3261e; --line: #d5dbd8; --soft: #5b6b65; }
+  @media (prefers-color-scheme: dark) { :root { --ink: #eef3f1; --paper: #0f1614; --card: #18221f; --line: #2b3a35; --soft: #9fb0aa; --green: #4fc39b; --amber: #f0b45a; --red: #ff8a80; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 1.5rem; margin: 8px 0 4px; }
+  h2 { font-size: 1.05rem; margin: 20px 0 8px; }
+  p.note { color: var(--soft); margin: 0 0 12px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  select, button, input[type=file], input[type=password] { font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); min-height: 44px; }
+  button { background: var(--green); color: #fff; border-color: var(--green); cursor: pointer; }
+  .numbers { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .numbers div { border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+  .numbers b { display: block; font-size: 1.5rem; }
+  .days { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+  .day h3 { margin: 0 0 6px; font-size: 0.95rem; }
+  .dose { border-left: 5px solid var(--line); padding: 4px 8px; margin: 6px 0; overflow-wrap: anywhere; }
+  .dose small { color: var(--soft); display: block; }
+  .marked { border-color: var(--green); } .not-marked { border-color: var(--red); } .not-sure { border-color: var(--amber); }
+  .alert { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); margin: 6px 0; }
+  .alert b.not_marked { color: var(--red); } .alert b.not_sure, .alert b.late { color: var(--amber); }
+  #message { min-height: 1.5em; }
+  .people { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .who { background: linear-gradient(160deg, #0c7c5d, #05372a); color: #fff; border-radius: 22px; padding: 16px; cursor: pointer; border: 3px solid transparent; }
+  .who.on { border-color: #7fd3b7; }
+  .who b { display: block; font-size: 1.35rem; }
+  .who span { display: block; opacity: 0.92; font-size: 0.95rem; margin-top: 2px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; background: #9fb0aa; }
+  .dot.live { background: #7fd3b7; }
+  summary { cursor: pointer; color: var(--soft); font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Your family's medicines</h1>
+  <p class="note">Open this on your own phone to watch over your parents' medicines. "Marked" means they confirmed the dose on their phone.</p>
+  <div class="people" id="overview"></div>
+
+  <details class="card">
+    <summary>Bring in a week by file instead</summary>
+    <h2>Bring in a week from the phone</h2>
+    <p class="note">On the phone: Family, Files, Save the week. Then pick that file here, or run <code>python -m stripsense_backend pull</code> with the phone on the cable.</p>
+    <div class="row">
+      <input type="file" id="file" accept=".csv,text/csv">
+      <input type="password" id="token" placeholder="Token, if one is set" autocomplete="off">
+      <button id="send">Store this week</button>
+    </div>
+    <p id="message" role="status"></p>
+  </details>
+
+  <div class="card" id="pairing" hidden>
+    <h2 style="margin-top:0">Connect a phone</h2>
+    <p class="note">On the phone: Family, Share, Connect to the family computer. Then point the phone at the words below.</p>
+    <p id="pairing-line" style="font: 700 clamp(18px, 3.4vw, 34px)/1.4 ui-monospace, Consolas, monospace; letter-spacing: 1px; margin: 8px 0; overflow-wrap: anywhere;"></p>
+  </div>
+
+  <div class="card">
+    <div class="row"><label for="person">Person</label><select id="person"></select></div>
+    <h2>The phone</h2>
+    <div class="numbers" id="phone"></div>
+    <h2>Counts on record</h2>
+    <div class="numbers" id="numbers"></div>
+  </div>
+
+  <div class="card"><h2 style="margin-top:0">Needs a look</h2><div id="alerts"></div></div>
+  <div class="card"><h2 style="margin-top:0">Last seven days on record</h2><div class="days" id="days"></div></div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+// Everything from a week file is put on the page as text, never as markup.
+const el = (tag, text, cls) => { const n = document.createElement(tag); if (text != null) n.textContent = text; if (cls) n.className = cls; return n; };
+// A page opened from another machine carries the token in its address: /?token=...
+const pageToken = new URLSearchParams(location.search).get("token");
+const get = async path => (await fetch(path, pageToken ? { headers: { "X-StripSense-Token": pageToken } } : {})).json();
+const words = { not_marked: "Not marked", not_sure: "Not sure", late: "Marked late" };
+
+async function show(personId) {
+  const [summary, alerts, week, phone] = await Promise.all(["summary", "alerts", "week", "phone"].map(what => get(`/api/people/${personId}/${what}`)));
+  const status = $("phone"); status.replaceChildren();
+  if (!phone) status.append(el("p", "This phone has not used the family link. Its weeks come by cable or by file.", "note"));
+  else {
+    const ago = phone.minutes_ago < 1 ? "just now" : phone.minutes_ago + " min ago";
+    for (const [label, value] of [["Phone", phone.online ? "Online" : "Not heard from"], ["Last heard", ago],
+        ["Battery", phone.battery == null ? "not known" : phone.battery + "%"], ["Charging", phone.charging ? "Yes" : "No"]]) {
+      const box = el("div"); box.append(el("b", String(value)), el("span", label)); status.append(box);
+    }
+  }
+  const numbers = $("numbers"); numbers.replaceChildren();
+  const share = summary.marked_share == null ? "no doses yet" : Math.round(summary.marked_share * 100) + "%";
+  for (const [label, value] of [["Marked", summary.marked], ["Not marked", summary.not_marked], ["Not sure", summary.not_sure], ["Still to come", summary.later], ["Share marked", share]]) {
+    const box = el("div"); box.append(el("b", String(value)), el("span", label)); numbers.append(box);
+  }
+  const list = $("alerts"); list.replaceChildren();
+  if (!alerts.length) list.append(el("p", "Nothing needs a look.", "note"));
+  for (const a of alerts.slice(0, 30)) {
+    const row = el("div", null, "alert");
+    row.append(el("b", words[a.kind] + ": ", a.kind), el("span", `${a.nickname} (${a.brand} ${a.strength}), ${a.date} at ${a.time}` + (a.marked_at ? `, marked at ${a.marked_at}` : "")));
+    list.append(row);
+  }
+  const days = $("days"); days.replaceChildren();
+  for (const day of week) {
+    const box = el("div", null, "day"); box.append(el("h3", day.date));
+    if (!day.doses.length) box.append(el("p", "No doses on record.", "note"));
+    for (const d of day.doses) {
+      const dose = el("div", null, "dose " + d.state.replace(" ", "-"));
+      dose.append(el("span", `${d.time} ${d.nickname}`), el("small", `${d.brand} ${d.strength} · ${d.state}` + (d.marked_at ? ` at ${d.marked_at}` : "")));
+      box.append(dose);
+    }
+    days.append(box);
+  }
+}
+
+// One card for each parent: are they online, is the phone charged, how the week is going. Press one to see its week.
+async function overview(all, chosen) {
+  const row = $("overview"); row.replaceChildren();
+  for (const p of all) {
+    const [phone, summary] = await Promise.all([get(`/api/people/${p.id}/phone`), get(`/api/people/${p.id}/summary`)]);
+    const card = el("div", null, "who" + (String(p.id) === String(chosen) ? " on" : ""));
+    const share = summary.marked_share == null ? "No doses yet this week" : Math.round(summary.marked_share * 100) + "% of doses marked this week";
+    const line = el("span"); line.append(el("i", null, "dot" + (phone && phone.online ? " live" : "")),
+      document.createTextNode(!phone ? "Phone not connected yet" : phone.online ? "Phone is on" : `Last heard ${phone.minutes_ago} min ago`));
+    card.append(el("b", p.name), line, el("span", share));
+    if (phone && phone.battery != null) card.append(el("span", `Battery ${phone.battery}%` + (phone.charging ? ", charging" : "")));
+    if (summary.not_marked + summary.not_sure > 0) card.append(el("span", `${summary.not_marked + summary.not_sure} doses need a look`));
+    card.addEventListener("click", () => { $("person").value = p.id; show(p.id); overview(all, p.id); });
+    row.append(card);
+  }
+}
+
+async function people(selectName) {
+  const all = await get("/api/people"), select = $("person");
+  select.replaceChildren();
+  for (const p of all) { const o = el("option", p.name); o.value = p.id; if (p.name === selectName) o.selected = true; select.append(o); }
+  overview(all, select.value);
+  if (all.length) show(select.value); else $("alerts").replaceChildren(el("p", "No week has been brought in yet.", "note"));
+}
+
+$("person").addEventListener("change", e => show(e.target.value));
+$("send").addEventListener("click", async () => {
+  const file = $("file").files[0];
+  if (!file) { $("message").textContent = "Pick the week file first."; return; }
+  const headers = { "Content-Type": "text/csv; charset=utf-8" };
+  if ($("token").value || pageToken) headers["X-StripSense-Token"] = $("token").value || pageToken;
+  const reply = await fetch("/api/weeks", { method: "POST", headers, body: await file.text() });
+  const body = await reply.json();
+  $("message").textContent = reply.ok ? `${body.person}: ${body.doses} doses ${body.new ? "stored" : "were already stored"}.` : "Not stored: " + body.error;
+  if (reply.ok) people(body.person);
+});
+get("/api/pairing").then(p => { if (p && p.line) { $("pairing-line").textContent = p.line; $("pairing").hidden = false; } }).catch(() => {});
+people();
+// The page follows the phone: it asks again every half minute.
+setInterval(() => { if ($("person").value) { show($("person").value); get("/api/people").then(all => overview(all, $("person").value)); } }, 30000);
+</script>
+</body>
+</html>

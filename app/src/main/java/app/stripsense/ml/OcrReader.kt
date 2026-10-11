@@ -3,7 +3,7 @@ package app.stripsense.ml
 import androidx.annotation.OptIn
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageProxy
-import app.stripsense.core.OcrLine
+import app.stripsense.core.domain.OcrLine
 import app.stripsense.data.Logs
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
@@ -19,20 +19,28 @@ class OcrReader {
     private var released = false
     private val finished = ArrayDeque<Long>()
 
+    /** How long the text reader took over its last frame, from handing it the frame to having its lines. */
+    @Volatile var lastReadMs = 0L
+        private set
+
     @OptIn(ExperimentalGetImage::class)
     @Synchronized
     fun read(proxy: ImageProxy, onLines: (List<OcrLine>) -> Unit) {
         if (closed || inFlight) { proxy.close(); return }
         inFlight = true
+        val startedAt = android.os.SystemClock.elapsedRealtime()
         val completed = AtomicBoolean(false)
         fun finish(lines: List<OcrLine>) {
             if (!completed.compareAndSet(false, true)) return
+            lastReadMs = android.os.SystemClock.elapsedRealtime() - startedAt
             try {
                 synchronized(this) { if (!closed) onLines(lines) }
             } finally {
                 proxy.close()
                 synchronized(this) {
-                    finished.addLast(System.currentTimeMillis())
+                    val now = System.currentTimeMillis()
+                    finished.addLast(now)
+                    while (finished.isNotEmpty() && now - finished.first() > 1000) finished.removeFirst()
                     inFlight = false
                     releaseIfIdle()
                 }
@@ -66,7 +74,7 @@ class OcrReader {
     private fun toLines(text: Text): List<OcrLine> = text.textBlocks.flatMap { block ->
         block.lines.map { line ->
             val box = line.boundingBox
-            OcrLine(line.text, box?.left ?: 0, box?.top ?: 0, box?.right ?: 0, box?.bottom ?: 0, box?.height() ?: 0, line.confidence)
+            OcrLine(line.text, box?.left ?: 0, box?.top ?: 0, box?.right ?: 0, box?.bottom ?: 0, box?.height() ?: 0, line.confidence, line.angle)
         }
     }
 }

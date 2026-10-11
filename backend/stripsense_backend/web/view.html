@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StripSense family view</title>
+<style>
+  :root { --ink: #0d1714; --ink2: #46524e; --soft: #66726e; --paper: #f3f5f4; --card: #fff; --green: #0a6a4f; --mint: #7fd3b7; --ok: #0a7350; --okbg: #e3f4ec; --red: #bb2129; --redbg: #fcebea; --amber: #9a5605; --amberbg: #fff1d9; --violet: #5638c0; --line: rgba(13,23,20,.08); }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 system-ui, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1000px; margin: 0 auto; padding: 16px 16px 40px; }
+  h1 { font-size: 1.6rem; margin: 10px 0 2px; letter-spacing: -.4px; }
+  h2 { font-size: 1.05rem; margin: 0 0 8px; }
+  .note { color: var(--soft); margin: 0 0 14px; }
+  .who { background: linear-gradient(160deg, #0c7c5d, #05372a); color: #fff; border-radius: 26px; padding: 18px; margin-bottom: 12px; cursor: pointer; border: 3px solid transparent; }
+  .who.on { border-color: var(--mint); }
+  .who b { display: block; font-size: 1.5rem; letter-spacing: -.3px; }
+  .who .big { font-size: 2.4rem; font-weight: 800; line-height: 1.1; margin: 6px 0 2px; }
+  .who span { display: block; opacity: .93; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; background: #9fb0aa; }
+  .dot.live { background: var(--mint); }
+  .card { background: var(--card); border-radius: 24px; padding: 16px 18px; margin-bottom: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+  .row { display: flex; align-items: center; gap: 10px; padding: 7px 0; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .row .t { width: 78px; color: var(--soft); font-size: .92rem; flex: none; }
+  .row .n { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .chip { flex: none; font-size: .8rem; font-weight: 700; border-radius: 999px; padding: 4px 10px; }
+  .marked { color: var(--ok); background: var(--okbg); } .not-marked { color: var(--amber); background: var(--amberbg); }
+  .not-sure { color: var(--violet); background: #eeeafd; } .later { color: var(--ink2); background: #e7ebe9; }
+  /* How the phone knows about a marked dose: the surer it is, the deeper the green. A press alone is grey. */
+  .marked.heard { color: #fff; background: #075a3e; }
+  .marked.pressed { color: var(--ink2); background: #e7ebe9; }
+  .key { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .key div { display: flex; gap: 10px; align-items: baseline; font-size: .9rem; color: var(--ink2); }
+  .key .chip { min-width: 112px; text-align: center; }
+  .news { background: #075a3e; color: #fff; border-radius: 24px; padding: 16px 18px; margin-bottom: 12px; display: flex; gap: 14px; align-items: center; animation: arrive .5s ease-out; }
+  .news b { display: block; font-size: 1.12rem; letter-spacing: -.2px; } .news span { opacity: .92; }
+  .bars { display: flex; gap: 3px; align-items: center; height: 30px; flex: none; }
+  .bars i { width: 4px; border-radius: 2px; background: var(--mint); animation: beat 1s ease-in-out infinite; }
+  .bars i:nth-child(1) { height: 40%; } .bars i:nth-child(2) { height: 75%; animation-delay: .15s; } .bars i:nth-child(3) { height: 100%; animation-delay: .3s; }
+  .bars i:nth-child(4) { height: 75%; animation-delay: .45s; } .bars i:nth-child(5) { height: 40%; animation-delay: .6s; }
+  @keyframes beat { 50% { transform: scaleY(.45); } }
+  @keyframes arrive { from { transform: translateY(-10px); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .bars i, .news { animation: none; } }
+  .title { font-size: 1.45rem; letter-spacing: -.4px; margin: 2px 0 2px; }
+  .scroll { overflow-x: auto; margin: 8px -6px 0; padding: 0 6px 4px; }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; }
+  th, td { padding: 9px 4px; text-align: center; border-top: 1px solid var(--line); white-space: nowrap; }
+  tr:first-child th { border-top: 0; font-size: .86rem; }
+  th b, td b { display: block; } th small, td small { display: block; color: var(--soft); font-weight: 500; font-size: .76rem; }
+  .left { text-align: left; } .time { font-weight: 700; }
+  td.left b { font-size: .98rem; }
+  td.left:first-child { white-space: normal; min-width: 130px; max-width: 190px; }
+  td.left:first-child small { overflow-wrap: anywhere; }
+  .none { color: #b6c0bc; }
+  td .chip { display: inline-block; }
+  .week { display: flex; justify-content: space-between; }
+  .week div { display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: .78rem; font-weight: 700; color: var(--soft); }
+  .week i { width: 14px; height: 14px; border-radius: 50%; display: block; }
+  input, button { font: inherit; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(13,23,20,.2); min-height: 48px; }
+  button { background: var(--green); color: #fff; border-color: var(--green); font-weight: 700; cursor: pointer; }
+  #ask { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Your family's medicines</h1>
+  <p class="note" id="status">Opening…</p>
+  <div class="card" id="ask">
+    <h2>Enter the family code</h2>
+    <p class="note">It is shown on your parent's phone under Family, Share. Or tap the link they sent you.</p>
+    <div style="display:flex; gap:8px; flex-wrap:wrap"><input id="code" placeholder="ABCD-EFGH-JKLM" autocapitalize="characters" autocomplete="off" style="flex:1"><button id="go">Open</button></div>
+  </div>
+  <div id="people"></div>
+  <div id="detail"></div>
+</main>
+<script>
+// Everything is opened here, on this phone. The server only hands over a sealed box; it never has the family code.
+const SALT = "stripsense-family-link-v1", BOUND = "stripsense-link-v1";
+const $ = id => document.getElementById(id);
+const enc = text => new TextEncoder().encode(text);
+const el = (tag, text, cls) => { const n = document.createElement(tag); if (text != null) n.textContent = text; if (cls) n.className = cls; return n; };
+const hex = bytes => Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, "0")).join("");
+
+async function keyOf(code) {
+  const clean = code.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+  const base = await crypto.subtle.importKey("raw", enc(clean), "PBKDF2", false, ["deriveBits"]);
+  return new Uint8Array(await crypto.subtle.deriveBits({ name: "PBKDF2", salt: enc(SALT), iterations: 100000, hash: "SHA-256" }, base, 256));
+}
+async function boxOf(key) {
+  const joined = new Uint8Array(key.length + 3); joined.set(key); joined.set(enc("box"), key.length);
+  return hex(await crypto.subtle.digest("SHA-256", joined)).slice(0, 32);
+}
+async function openBox(blob, key) {
+  const k = await crypto.subtle.importKey("raw", key, "AES-GCM", false, ["decrypt"]);
+  const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: blob.slice(0, 12), additionalData: enc(BOUND) }, k, blob.slice(12));
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+// The week file: line 1 is pairs, line 2 the header, then one dose a line. Quotes are handled; nothing is trusted as markup.
+function csv(text) {
+  const rows = []; let row = [], cell = "", quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) { if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; } else if (c === '"') quoted = false; else cell += c; }
+    else if (c === '"') quoted = true;
+    else if (c === ",") { row.push(cell); cell = ""; }
+    else if (c === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
+    else if (c !== "\r") cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(x => x));
+}
+function weekOf(text) {
+  const rows = csv(text).slice(2).map(r => ({ date: r[0], time: r[1], name: r[2], brand: r[3], strength: r[4], state: r[5], at: r[6], how: KNOWN[r[7]] || "" }));
+  const count = s => rows.filter(r => r.state === s).length;
+  const came = count("marked") + count("not marked") + count("not sure");
+  // The newest marked dose, for "what happened last".
+  const latest = rows.filter(r => r.state === "marked" && r.at).sort((x, y) => (x.date + x.at).localeCompare(y.date + y.at)).pop() || null;
+  // When the parent's phone wrote this week, in the parent's own clock: the newest mark is "just now" if it is within three minutes of it.
+  const written = (csv(text)[0] || [])[1] || "";
+  const fresh = !!latest && !!written && (() => { const gap = (new Date(written) - new Date(latest.date + "T" + latest.at)) / 60000; return gap >= 0 && gap <= 3; })();
+  return { rows, latest, fresh, marked: count("marked"), open: count("not marked"), unsure: count("not sure"), share: came ? Math.round(count("marked") * 100 / came) : null,
+    watched: rows.filter(r => r.state === "marked" && (r.how === "heard" || r.how === "seen")).length };
+}
+// How the parent's phone knows about a marked dose. It never says a tablet was swallowed; it says how much the phone was there for.
+const KNOWN = { heard: "heard", prompt: "seen", voice: "seen", button: "pressed", reminder: "pressed" };
+const HOW = { heard: "the phone checked the strip and heard the tablet come out", seen: "the phone checked the strip, then yes was pressed", pressed: "a button was pressed; the phone did not see the strip" };
+const HOW_SHORT = { heard: "seen and heard", seen: "strip seen", pressed: "button pressed" };
+const colour = s => ({ "marked": "#0a7350", "not marked": "#bb2129", "not sure": "#5638c0" }[s] || "#c9d1ce");
+const word = r => r.state === "marked" ? "Marked " + clock(r.at) : r.state === "not marked" ? "Not marked" : r.state === "not sure" ? "Not sure" : "Later";
+
+let shown = 0;
+// The newest mark of each person at the last look, so a new one can be announced the moment it arrives.
+const lastMark = {};
+let news = null;
+function draw(message, heardAt) {
+  const minutes = Math.max(0, Math.round((Date.now() - new Date(message.sent_at).getTime()) / 60000));
+  const live = minutes <= 5;
+  $("status").textContent = "What their phone recorded, and how it knows. The deeper the green, the more the phone itself saw and heard.";
+  const people = $("people"); people.replaceChildren();
+  message.people.forEach(p => {
+    const week = weekOf(p.week), latest = week.latest, id = latest ? latest.date + latest.at + latest.name : "";
+    // A mark that arrived while this page was open, or one made in the last minutes before it was opened.
+    if (id && id !== lastMark[p.name] && (p.name in lastMark || (week.fresh && live))) news = { name: p.name, dose: latest, until: Date.now() + 90000 };
+    lastMark[p.name] = id;
+  });
+  if (news && Date.now() < news.until) {
+    const box = el("div", null, "news"), bars = el("div", null, "bars"), words = el("div");
+    for (let i = 0; i < 5; i++) bars.append(el("i"));
+    words.append(el("b", `${news.name}: ${news.dose.name}, marked just now at ${clock(news.dose.at)}`),
+      el("span", news.dose.how ? "How the phone knows: " + HOW[news.dose.how] + "." : ""));
+    if (news.dose.how === "heard") box.append(bars);
+    box.append(words); people.append(box);
+  }
+  message.people.forEach((p, i) => {
+    const w = weekOf(p.week);
+    const card = el("div", null, "who" + (i === shown ? " on" : ""));
+    const line = el("span"); line.append(el("i", null, "dot" + (live ? " live" : "")), document.createTextNode(live ? "Phone is on" : minutes < 120 ? `Last heard ${minutes} min ago` : `Last heard ${Math.round(minutes / 60)} hours ago`));
+    card.append(el("b", p.name), el("div", w.share == null ? "–" : w.share + "%", "big"), el("span", "of this week's doses marked"), line,
+      el("span", `Battery ${message.battery}%` + (message.charging ? ", charging" : "")));
+    if (w.marked) card.append(el("span", `${w.watched} of ${w.marked} marked with the phone watching`));
+    if (w.latest) card.append(el("span", `Latest: ${w.latest.name}, ${clock(w.latest.at)}` + (w.latest.how ? ` (${HOW_SHORT[w.latest.how]})` : "")));
+    if (w.open + w.unsure) card.append(el("span", `${w.open + w.unsure} doses need a look`));
+    card.addEventListener("click", () => { shown = i; draw(message, heardAt); });
+    people.append(card);
+  });
+  const p = message.people[shown] || message.people[0], detail = $("detail"); detail.replaceChildren();
+  if (!p) return;
+  const w = weekOf(p.week);
+  // The week as the prototype drew it: one line for each medicine at each time, one column for each day.
+  const sent = new Date(message.sent_at);
+  const head = el("div", null, "card");
+  if (message.example) head.append(el("span", "Example week", "chip later"));
+  head.append(el("h2", `${p.name}'s medicines, this week`, "title"),
+    el("p", `Last updated ${sent.toLocaleDateString(undefined, { weekday: "long" })} at ${sent.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}, from their phone.`, "note"));
+  const last = w.rows.map(r => r.date).sort().pop();
+  if (last) {
+    const end = new Date(last + "T12:00"), days = [];
+    for (let back = 6; back >= 0; back--) { const d = new Date(end); d.setDate(end.getDate() - back); days.push(d.toISOString().slice(0, 10)); }
+    const lines = [...new Map(w.rows.map(r => [r.name + "|" + r.brand + "|" + r.strength + "|" + r.time, r])).values()]
+      .sort((x, y) => x.name.localeCompare(y.name) || x.time.localeCompare(y.time));
+    const scroll = el("div", null, "scroll"), table = el("table"), top = el("tr");
+    top.append(el("th", "Medicine", "left"), el("th", "Time", "left"));
+    days.forEach(d => { const th = el("th"); const day = new Date(d + "T12:00"); th.append(el("b", day.toLocaleDateString(undefined, { weekday: "short" })), el("small", day.toLocaleDateString(undefined, { day: "numeric", month: "short" }))); top.append(th); });
+    table.append(top);
+    lines.forEach(l => {
+      const tr = el("tr"), name = el("td", null, "left");
+      name.append(el("b", l.name), el("small", [l.brand, l.strength].filter(Boolean).join(" · ")));
+      tr.append(name, el("td", clock(l.time), "left time"));
+      days.forEach(d => {
+        const r = w.rows.find(x => x.date === d && x.time === l.time && x.name === l.name && x.brand === l.brand), td = el("td");
+        // A dot: the medicine was not on the list that day.
+        if (!r) td.append(el("span", "·", "none"));
+        else {
+          const chip = el("span", r.state === "marked" ? clock(r.at) : r.state, "chip " + r.state.replace(" ", "-") + (r.state === "marked" && r.how ? " " + r.how : ""));
+          if (r.state === "marked" && r.how) chip.title = HOW[r.how];
+          td.append(chip);
+        }
+        tr.append(td);
+      });
+      table.append(tr);
+    });
+    scroll.append(table); head.append(scroll);
+    // What the three greens mean.
+    const key = el("div", null, "key");
+    [["heard", "Seen and heard"], ["seen", "Strip seen"], ["pressed", "Button pressed"]].forEach(([how, label]) => {
+      const one = el("div"); one.append(el("span", label, "chip marked " + how), el("span", HOW[how][0].toUpperCase() + HOW[how].slice(1) + "."));
+      key.append(one);
+    });
+    head.append(key);
+  }
+  detail.append(head);
+  const needs = w.rows.filter(r => r.state === "not marked" || r.state === "not sure").reverse();
+  const look = el("div", null, "card"); look.append(el("h2", "Needs a look"));
+  if (!needs.length) look.append(el("p", "Nothing needs a look.", "note"));
+  needs.slice(0, 8).forEach(r => look.append(line(r, new Date(r.date + "T12:00").toLocaleDateString(undefined, { weekday: "long" }) + " " + clock(r.time))));
+  detail.append(look);
+}
+// "20:05" as people say it: 8:05 pm.
+function clock(hhmm) {
+  if (!/^\d{2}:\d{2}$/.test(hhmm || "")) return hhmm || "";
+  const h = +hhmm.slice(0, 2), m = hhmm.slice(3);
+  return ((h + 11) % 12 + 1) + ":" + m + (h < 12 ? " am" : " pm");
+}
+function line(r, when) {
+  const row = el("div", null, "row");
+  row.append(el("span", when, "t"), el("span", r.name, "n"), el("span", word(r), "chip " + r.state.replace(" ", "-")));
+  return row;
+}
+
+async function load(code) {
+  try {
+    const key = await keyOf(code), reply = await fetch("/api/box/" + await boxOf(key), { cache: "no-store" });
+    if (reply.status === 404) { $("status").textContent = "Nothing has arrived from their phone yet. Ask them to press Send now under Family, Share."; return true; }
+    draw(await openBox(new Uint8Array(await reply.arrayBuffer()), key), reply.headers.get("X-Received-At"));
+    return true;
+  } catch (problem) {
+    $("status").textContent = "That code does not open anything. Check it against the code on your parent's phone.";
+    return false;
+  }
+}
+async function start() {
+  // The code travels after the "#", which the browser keeps to itself. It is remembered on this phone only.
+  let code = decodeURIComponent(location.hash.slice(1));
+  try { code = code || localStorage.getItem("stripsense-code") || ""; } catch (e) {}
+  if (!code) { $("ask").style.display = "block"; $("status").textContent = ""; return; }
+  if (await load(code)) { try { localStorage.setItem("stripsense-code", code); } catch (e) {} setInterval(() => { if (!document.hidden) load(code); }, 5000); }
+  else $("ask").style.display = "block";
+}
+$("go").addEventListener("click", () => { location.hash = $("code").value.trim(); location.reload(); });
+if (!window.crypto || !crypto.subtle) $("status").textContent = "This page must be opened with https to keep your family's week private."; else start();
+</script>
+</body>
+</html>

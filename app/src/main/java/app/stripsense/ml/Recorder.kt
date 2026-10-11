@@ -4,7 +4,7 @@ import android.annotation.SuppressLint
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
-import app.stripsense.core.Wav
+import app.stripsense.core.voice.Wav
 import app.stripsense.data.Logs
 import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.Dispatchers

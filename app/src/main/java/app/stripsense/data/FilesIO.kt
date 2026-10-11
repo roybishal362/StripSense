@@ -8,6 +8,9 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import java.io.File
+import java.io.FileOutputStream
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 /** Files the family sees: Download/StripSense through MediaStore, the file picker, taught photos (spec 07 section 7). */
 object FilesIO {
@@ -57,10 +60,21 @@ object FilesIO {
         }
     }.getOrNull()
 
-    /** A taught photo as JPEG in <filesDir>/looks/. Returns the file name, or null. */
-    fun savePhoto(dir: File, name: String, bitmap: Bitmap): String? = runCatching {
-        dir.mkdirs()
-        File(dir, name).outputStream().use { check(bitmap.compress(Bitmap.CompressFormat.JPEG, 85, it)) }
-        name
-    }.getOrNull()
+    /** A taught photo in <filesDir>/looks/, sealed when the store has a cipher. Returns the file name, or null. */
+    fun savePhoto(dir: File, name: String, bitmap: Bitmap, cipher: StoreCipher? = null): String? {
+        val target = File(dir, File(name).name)
+        val pending = File(target.path + ".part")
+        return runCatching {
+            dir.mkdirs()
+            // The JPEG is made in memory, so the plain picture never touches the disk.
+            val jpeg = java.io.ByteArrayOutputStream().use { out -> check(bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)); out.toByteArray() }
+            FileOutputStream(pending).use {
+                it.write(if (cipher != null) Sealed.seal(cipher, jpeg) else jpeg)
+                it.fd.sync()
+            }
+            Files.move(pending.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
+            target.name
+        }.onFailure { pending.delete() }.getOrNull()
+    }
+
 }

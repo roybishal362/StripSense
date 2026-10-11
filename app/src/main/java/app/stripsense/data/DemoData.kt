@@ -1,12 +1,12 @@
 package app.stripsense.data
 
-import app.stripsense.core.MedStatus
-import app.stripsense.core.MedType
-import app.stripsense.core.Medicine
-import app.stripsense.core.Person
-import app.stripsense.core.StoreData
-import app.stripsense.core.Strength
-import app.stripsense.core.StrengthUnit
+import app.stripsense.core.domain.MedStatus
+import app.stripsense.core.domain.MedType
+import app.stripsense.core.domain.Medicine
+import app.stripsense.core.domain.Person
+import app.stripsense.core.domain.StoreData
+import app.stripsense.core.domain.Strength
+import app.stripsense.core.domain.StrengthUnit
 
 /**
  * The demo list, copied row by row from docs/sample/list.csv (spec 05 section 2), and the default person.

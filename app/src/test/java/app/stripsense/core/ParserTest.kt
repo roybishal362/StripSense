@@ -1,5 +1,15 @@
 package app.stripsense.core
 
+import app.stripsense.core.domain.*
+import app.stripsense.core.text.*
+import app.stripsense.core.scan.*
+import app.stripsense.core.teach.*
+import app.stripsense.core.guide.*
+import app.stripsense.core.dose.*
+import app.stripsense.core.say.*
+import app.stripsense.core.voice.*
+import app.stripsense.core.report.*
+
 import app.stripsense.core.Fixtures.key
 import app.stripsense.core.Fixtures.lines
 import app.stripsense.core.Fixtures.s
@@ -71,7 +81,8 @@ class ParserTest {
     @Test fun normalise_followsSpecOrder() {
         assertEquals("CALVORA D", TextNorm.normalise("Calvora-D"))
         assertEquals("0.5 % W V", TextNorm.normalise("0.5% w/v"))
-        assertEquals("I P 500MG", TextNorm.normalise("I.P. 500mg."))
+        // Changed on 10 October: dotted pharmacopoeia letters are one word, so their "P" cannot be read as a name.
+        assertEquals("IP 500MG", TextNorm.normalise("I.P. 500mg."))
         assertEquals("10 MCG", TextNorm.normalise("10 µg"))
         assertEquals("10 MCG", TextNorm.normalise("10 μG"))
         assertEquals("A + B", TextNorm.normalise("A+B"))

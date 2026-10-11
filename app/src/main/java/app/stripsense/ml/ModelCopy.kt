@@ -20,11 +20,17 @@ object ModelCopy {
         data class Done(val wrongSize: Boolean) : Result
         data object NoSpace : Result
         data object Failed : Result
+
+        /** The picked file cannot be the model, or would replace a good one. Nothing was changed. */
+        data object NotModel : Result
     }
 
     /** [onProgress] gets 0..1, from a background thread. */
     suspend fun copy(context: Context, uri: Uri, target: File, onProgress: (Float) -> Unit): Result = withContext(Dispatchers.IO) {
         val size = sizeOf(context, uri)
+        val installed = if (target.isFile) target.length() else 0L
+        // Known to be the wrong thing before a byte is copied: any other file the person might pick by mistake.
+        if (size >= 0 && !app.stripsense.core.domain.ModelRule.accept(size, installed, Gemma.MODEL_BYTES)) return@withContext Result.NotModel
         target.parentFile?.mkdirs()
         val free = target.parentFile?.usableSpace ?: 0L
         if (size > 0 && free < size + 64L * 1024 * 1024) return@withContext Result.NoSpace
@@ -52,6 +58,8 @@ object ModelCopy {
                 }
             } ?: throw IOException("no stream")
             if (tmp.length() == 0L) throw IOException("empty model")
+            // Checked again on what really arrived; the file in use is replaced only after this.
+            if (!app.stripsense.core.domain.ModelRule.accept(tmp.length(), installed, Gemma.MODEL_BYTES)) { tmp.delete(); return@withContext Result.NotModel }
             Files.move(tmp.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE)
             Result.Done(wrongSize = target.length() != Gemma.MODEL_BYTES)
         } catch (e: Exception) {

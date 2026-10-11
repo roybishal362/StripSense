@@ -95,6 +95,8 @@ Hindi numbers 0 to 99, in order (the first is 0, the last is 99):
 | NOTE | {family}'s note: {note}. | {family} ने लिखा है: {note}। |
 | Q1 | Are you taking it now? | अभी ले रहे हैं? / (to a woman) अभी ले रही हैं? |
 | R1 | Okay, I've marked your {nickname} at {time}. | ठीक है, आपकी {nickname} {at_time} दर्ज कर दी। |
+| H1 | I heard the tablet come out. I've marked your {nickname} at {time}. | गोली निकलने की आवाज़ सुनाई दी। आपकी {nickname} {at_time} दर्ज कर दी। |
+| LS1 | Or just push the tablet out. I will hear it. | या बस गोली निकाल लीजिए, मुझे सुनाई दे जाएगा। |
 | U2 | Okay, I've taken the mark off. It's not marked now. | ठीक है, निशान हटा दिया। अब ये दर्ज नहीं है। |
 | NO1 | Okay, I won't mark it. | ठीक है, इसे दर्ज नहीं किया। |
 | NS3 | Okay, I've noted that you're not sure. Best to check with {contact}. | ठीक है, लिख लिया कि पक्का नहीं पता। एक बार {contact} से पूछ लीजिए। |
@@ -135,6 +137,7 @@ Q1 has two Hindi forms; use the second when the person is set as a woman (the de
 | V4 | Voice is getting ready. The buttons work. | बोलकर पूछना अभी तैयार हो रहा है। बटन काम कर रहे हैं। |
 | V5 | Please hold up the strip. | पट्टी दिखाइए। |
 | V6 | Hold up your strips one at a time and I'll tell you which is which. | एक-एक करके पट्टियाँ दिखाइए, हर एक के बारे में बता देंगे। |
+| V7 | Point the phone at your medicines. I will lead you to it. | फ़ोन अपनी दवाओं की तरफ़ कीजिए। मैं आपको उस तक ले चलूँगा। |
 | V9 | That one has its own Mark button on the Today screen. | उसका अपना बटन "आज" वाली स्क्रीन पर है। |
 | WL0 | Everything on today's list is marked. | आज की सूची की हर खुराक दर्ज है। |
 | WL0b | There's nothing on your list for today. | आज के लिए आपकी सूची में कुछ नहीं है। |

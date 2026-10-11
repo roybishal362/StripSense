@@ -1,5 +1,15 @@
 package app.stripsense.core
 
+import app.stripsense.core.domain.*
+import app.stripsense.core.text.*
+import app.stripsense.core.scan.*
+import app.stripsense.core.teach.*
+import app.stripsense.core.guide.*
+import app.stripsense.core.dose.*
+import app.stripsense.core.say.*
+import app.stripsense.core.voice.*
+import app.stripsense.core.report.*
+
 import app.stripsense.core.Fixtures.LIST
 import app.stripsense.core.Fixtures.M1
 import app.stripsense.core.Fixtures.M2
@@ -56,7 +66,7 @@ class VoiceRouterTest {
     @Test fun statusWithoutMedicine() = assertEquals("WL2", ids(route("status_of")).first())
     @Test fun whatsLeft() = assertEquals("CHK", ids(route("whats_left")).last())
     @Test fun whichOne() = assertEquals(VoiceAction.OpenScan, route("which_one"))
-    @Test fun whichIsCamera() = assertEquals(VoiceAction.ShowPhoto(M2), route("which_is_x", 2))
+    @Test fun whichIsCamera() = assertEquals(VoiceAction.Find(M2), route("which_is_x", 2))
     @Test fun whichIsButton() = assertEquals(listOf("V9"), ids(route("which_is_x", 5)))
     @Test fun takenNowMarksNothing() = assertEquals(listOf("VS1", "CHK", "V2"), ids(route("taken_now", 1)))
     @Test fun yesNoWithoutMedicine() = assertEquals(listOf("V0"), ids(route("yes_no")))

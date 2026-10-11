@@ -2,7 +2,7 @@ package app.stripsense.ml
 
 import android.content.Context
 import android.graphics.Bitmap
-import app.stripsense.core.CropBox
+import app.stripsense.core.scan.CropBox
 import app.stripsense.data.Logs
 import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.tasks.core.BaseOptions
@@ -23,9 +23,14 @@ class LookEmbedder(private val context: Context) {
     fun embed(bitmap: Bitmap): List<Float>? {
         val e = embedder ?: open() ?: return null
         return runCatching {
-            val image = BitmapImageBuilder(bitmap).build()
-            try { e.embed(image).embeddingResult().embeddings()[0].floatEmbedding().toList() }
-            finally { image.close() }
+            // MPImage.close recycles its bitmap. Give it private pixels, never the caller's photo.
+            val scaled = bitmap.fitWithin(512)
+            val owned = if (scaled === bitmap) checkNotNull(bitmap.copy(Bitmap.Config.ARGB_8888, false)) else scaled
+            try {
+                val image = BitmapImageBuilder(owned).build()
+                try { e.embed(image).embeddingResult().embeddings()[0].floatEmbedding().toList() }
+                finally { image.close() }
+            } finally { if (!owned.isRecycled) owned.recycle() }
         }.onFailure { Logs.w("embed failed: ${it.javaClass.simpleName}") }.getOrNull()
     }
 

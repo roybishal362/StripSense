@@ -1,0 +1,291 @@
+package app.stripsense.ui.shell
+
+import app.stripsense.ui.shell.*
+import app.stripsense.ui.scan.*
+import app.stripsense.ui.ask.*
+import app.stripsense.ui.today.*
+import app.stripsense.ui.family.*
+import app.stripsense.ui.setup.*
+import app.stripsense.ui.dev.*
+import app.stripsense.core.say.Slot
+import app.stripsense.core.text.Words
+import java.time.LocalTime
+
+/** Button and screen labels in English and Hindi (spec 03 section 5). Answers never live here. */
+object Labels {
+
+    fun get(key: String, language: String): String {
+        val pair = REMINDER_LABELS[key] ?: CORE_LABELS[key] ?: SETUP_LABELS[key] ?: EXTRA_LABELS[key] ?: LABELS[key] ?: return key
+        return if (language == "hi") pair.second else pair.first
+    }
+
+    /** A label with its {x} values filled in: fill("call", lang, "c" to "Rahul"). */
+    fun fill(key: String, language: String, vararg values: Pair<String, Any>): String {
+        var text = get(key, language)
+        for ((k, v) in values) text = text.replace("{$k}", v.toString())
+        return text
+    }
+
+    fun slot(slot: Slot, language: String): String = get(
+        when (slot) {
+            Slot.MORNING -> "slotMorning"
+            Slot.AFTERNOON -> "slotAfternoon"
+            Slot.EVENING -> "slotEvening"
+            Slot.NIGHT -> "slotNight"
+        },
+        language,
+    )
+
+    /** "Morning dose · 8:00 am". */
+    fun doseLine(time: LocalTime, language: String): String =
+        fill("doseLine", language, "s" to slot(Slot.of(time), language), "t" to Words.timeShown(time, language))
+
+    /** The greeting by the clock: morning 04:00 to 11:59, afternoon 12:00 to 15:59, evening otherwise. */
+    fun greeting(time: LocalTime, call: String, language: String): String {
+        val key = when (time.hour) {
+            in 4..11 -> "greetMorning"
+            in 12..15 -> "greetAfternoon"
+            else -> "greetEvening"
+        }
+        val text = fill(key, language, "c" to call)
+        return if (call.isBlank()) text.trimEnd(' ', ',') else text
+    }
+    private val EXTRA_LABELS = mapOf(
+        "demoAlarmNow" to ("Ring the alarm for this dose now" to "इस खुराक का अलार्म अभी बजाएँ"),
+        "touchOnlyTitle" to ("Touch only" to "सिर्फ़ छूकर"),
+        "touchOnlyBody" to ("For someone who cannot hear the phone. It stays silent and says everything through the hand. To answer yes, knock twice on the phone or press a volume button." to
+            "उनके लिए जो फ़ोन की आवाज़ नहीं सुन सकते। फ़ोन चुप रहता है और सब कुछ हाथ में कंपन से बताता है। हाँ कहने के लिए फ़ोन पर दो बार खटखटाइए, या आवाज़ का बटन दबाइए।"),
+        "knockForYes" to ("Knock twice on the phone for yes." to "हाँ के लिए फ़ोन पर दो बार खटखटाइए।"),
+        "feelQuestion" to ("The question" to "सवाल"),
+        "feelDone" to ("Marked" to "दर्ज"),
+        "feelTitle" to ("Feel the way" to "छूकर रास्ता जानिए"),
+        "feelBody" to ("The phone also speaks through the hand, for when the screen cannot be seen or nothing can be heard. The end of the phone that ticks is the way to move it. One long buzz means yes, this is the one. Two sharp knocks mean no. Each kind of medicine has its own rhythm. Press each to feel it." to
+            "फ़ोन हाथ में कंपन से भी बताता है, जब स्क्रीन न दिखे या कुछ सुनाई न दे। फ़ोन का जो सिरा थरथराए, फ़ोन उसी तरफ़ ले जाइए। एक लंबा कंपन यानी हाँ, यही है। दो तेज़ झटके यानी नहीं। हर तरह की दवा की अपनी ताल है। हर बटन दबाकर महसूस कीजिए।"),
+        "feelBodyOne" to ("The phone also speaks through the hand. One long buzz means yes, this is the one. Two sharp knocks mean no. Each kind of medicine has its own rhythm. Press each to feel it." to
+            "फ़ोन हाथ में कंपन से भी बताता है। एक लंबा कंपन यानी हाँ, यही है। दो तेज़ झटके यानी नहीं। हर तरह की दवा की अपनी ताल है। हर बटन दबाकर महसूस कीजिए।"),
+        "feelTop" to ("Top end" to "ऊपर का सिरा"),
+        "feelBottom" to ("Bottom end" to "नीचे का सिरा"),
+        "feelYes" to ("Yes" to "हाँ"),
+        "feelNo" to ("No" to "नहीं"),
+        "feelBp" to ("BP" to "बीपी"),
+        "feelSugar" to ("Sugar" to "शुगर"),
+        "feelFever" to ("Fever" to "बुख़ार"),
+        "feelSwap" to ("\"Top end\" was felt at the bottom: swap them" to "\"ऊपर का सिरा\" नीचे महसूस हुआ: इन्हें बदलें"),
+        "hearTry" to ("Try it now" to "अभी आज़माएँ"),
+        "hearTryAgain" to ("Try again" to "फिर आज़माएँ"),
+        "hearTryStop" to ("Stop" to "रोकें"),
+        "hearTryNow" to ("Push one tablet out, close to the phone. The phone is listening." to "फ़ोन के पास एक गोली निकालिए। फ़ोन सुन रहा है।"),
+        "hearTryNoisy" to ("It is noisy here. Push the tablet out very close to the phone." to "यहाँ शोर है। गोली फ़ोन के बिल्कुल पास निकालिए।"),
+        "hearTryHeard" to ("The phone heard the tablet come out. It will know this sound now." to "फ़ोन ने गोली निकलने की आवाज़ सुन ली। अब वह इस आवाज़ को पहचानेगा।"),
+        "hearTryNothing" to ("Nothing was heard. Try once more, closer to the phone and away from music." to "कुछ सुनाई नहीं दिया। एक बार और आज़माइए, फ़ोन के और पास, संगीत से दूर।"),
+        "exampleWeekTag" to ("Example week" to "नमूने का हफ़्ता"),
+        "exampleWeekTitle" to ("Example week" to "नमूने का हफ़्ता"),
+        "exampleWeekOff" to ("Fills the six days before today with an example of how a week looks. Today stays as it is. It is named as an example on the Health page and on the family's page." to
+            "आज से पहले के छह दिन एक नमूने के हफ़्ते से भर जाते हैं। आज का दिन जैसा है वैसा रहता है। हेल्थ पेज और परिवार के पेज पर इसे नमूना ही लिखा जाता है।"),
+        "exampleWeekOn" to ("The example week is showing. Today is real." to "नमूने का हफ़्ता दिख रहा है। आज का दिन असली है।"),
+        "exampleWeekFill" to ("Show an example week" to "नमूने का हफ़्ता दिखाएँ"),
+        "exampleWeekAgain" to ("Fill it again" to "फिर से भरें"),
+        "exampleWeekRemove" to ("Take the example week out" to "नमूने का हफ़्ता हटाएँ"),
+        "listeningTablet" to ("Or just push the tablet out. The phone is listening." to "या बस गोली निकाल लीजिए। फ़ोन सुन रहा है।"),
+        "listeningNoisy" to ("It is noisy here. Press Yes when you take it." to "यहाँ शोर है। गोली लेते समय हाँ दबाइए।"),
+        "heardTablet" to ("The phone heard the tablet come out." to "फ़ोन ने गोली निकलने की आवाज़ सुनी।"),
+        "hearTitle" to ("Hear the tablet come out" to "गोली निकलने की आवाज़ सुनना"),
+        "hearBody" to ("After the camera has checked the strip, the phone listens. When it hears the tablet pushed out, it marks the dose by itself and says so. Nothing is recorded." to
+            "कैमरा पत्ता जाँच ले, उसके बाद फ़ोन सुनता है। गोली निकलने की आवाज़ आते ही खुराक अपने आप दर्ज हो जाती है, और फ़ोन बता देता है। कुछ भी रिकॉर्ड नहीं होता।"),
+        "hearNeedsMic" to ("Allow the microphone for this." to "इसके लिए माइक की अनुमति दीजिए।"),
+        "proofHeard" to ("Seen and heard" to "देखा और सुना"),
+        "proofSeen" to ("Strip seen" to "पत्ता देखा"),
+        "proofPressed" to ("Button pressed" to "बटन दबाया"),
+        "proofHeardLong" to ("The phone checked the strip and heard the tablet come out." to "फ़ोन ने पत्ता जाँचा और गोली निकलने की आवाज़ सुनी।"),
+        "proofSeenLong" to ("The phone checked the strip. Then yes was pressed." to "फ़ोन ने पत्ता जाँचा। फिर हाँ दबाया गया।"),
+        "proofPressedLong" to ("A button was pressed. The phone did not see the strip." to "बटन दबाया गया। फ़ोन ने पत्ता नहीं देखा।"),
+        "proofTitle" to ("How the phone knows" to "फ़ोन को कैसे पता"),
+        "shareTurnOn" to ("Turn this on" to "इसे चालू करें"),
+        "shareCode" to ("FAMILY CODE" to "परिवार का कोड"),
+        "shareSend" to ("Send the link to your family" to "परिवार को लिंक भेजें"),
+        "shareInvite" to ("Tap this to see how the medicines are going: {l}" to "दवाओं का हाल देखने के लिए इसे दबाइए: {l}"),
+        "tabAlarms" to ("Alarms" to "अलार्म"),
+        "alarmsNone" to ("No alarms yet. Add one below." to "अभी कोई अलार्म नहीं। नीचे से जोड़िए।"),
+        "alarmsChange" to ("Change" to "बदलें"),
+        "alarmsRemove" to ("Remove this alarm" to "यह अलार्म हटाएँ"),
+        "alarmsAdd" to ("Add an alarm" to "अलार्म जोड़ें"),
+        "alarmsNoMeds" to ("Add a medicine in List first. Then you can set its alarm here." to "पहले सूची में दवा जोड़िए। फिर यहाँ उसका अलार्म रख सकते हैं।"),
+        "alarmsHow" to ("How it rings" to "कैसे बजता है"),
+        "alarmOn" to ("Alarms" to "अलार्म"),
+        "alarmOnNote" to ("The phone rings and shows which medicines it is time for. It works with no network." to "फ़ोन बजता है और दिखाता है कि किन दवाओं का समय है। नेटवर्क न हो तब भी चलता है।"),
+        "alarmAgain" to ("If nobody answers, ring again" to "कोई जवाब न दे तो फिर बजे"),
+        "alarmEvery" to ("every {n} min" to "हर {n} मिनट"),
+        "alarmStops" to ("It stops by itself after half an hour. The dose then shows as not marked." to "आधे घंटे बाद ख़ुद रुक जाता है। खुराक तब दर्ज नहीं दिखती।"),
+        "alarmBlocked" to ("The phone is not letting this app ring." to "फ़ोन इस ऐप को बजने नहीं दे रहा।"),
+        "alarmLate" to ("The phone may ring a little late." to "फ़ोन थोड़ी देर से बज सकता है।"),
+        "alarmQuiet" to ("The alarm's sound is turned off on this phone." to "इस फ़ोन पर अलार्म की आवाज़ बंद है।"),
+        "alarmAllow" to ("Fix this" to "इसे ठीक करें"),
+        "alarmTurnSoundOn" to ("Turn the sound on" to "आवाज़ चालू करें"),
+        "alarmTry" to ("Hear the alarm now" to "अभी अलार्म सुनें"),
+        "alarmTryPending" to ("It will ring in a few seconds." to "कुछ सेकंड में बजेगा।"),
+        "shareOff" to ("Let your family watch over the medicines" to "परिवार को दवाओं पर नज़र रखने दें"),
+        "shareOffNote" to ("Your son or daughter can see, on their own phone, wherever they live, which doses were marked and whether this phone is charged. Nothing else leaves this phone: no photos, no voice." to "आपका बेटा या बेटी, जहाँ भी रहते हों, अपने फ़ोन पर देख सकते हैं कि कौन-सी खुराकें दर्ज हुईं और यह फ़ोन चार्ज है या नहीं। और कुछ इस फ़ोन से बाहर नहीं जाता: न फ़ोटो, न आवाज़।"),
+        "shareConnect" to ("Connect a family member's phone" to "परिवार के सदस्य का फ़ोन जोड़ें"),
+        "shareOn" to ("Your family can watch over the medicines" to "आपका परिवार दवाओं पर नज़र रख सकता है"),
+        "shareOnNote" to ("Send them the link once. After that they see the week on their own phone, wherever they are." to "उन्हें एक बार लिंक भेज दीजिए। उसके बाद वे जहाँ भी हों, अपने फ़ोन पर हफ़्ता देख सकते हैं।"),
+        "shareSent" to ("Last sent at {t}." to "पिछली बार {t} पर भेजा।"),
+        "shareNotReached" to ("It could not be sent just now. This phone will try again by itself when it is online." to "अभी भेजा नहीं जा सका। ऑनलाइन होते ही यह फ़ोन ख़ुद फिर कोशिश करेगा।"),
+        "shareNow" to ("Send now" to "अभी भेजें"),
+        "shareStop" to ("Stop sharing" to "साझा करना बंद करें"),
+        "sharePoint" to ("Point this phone at the family view on their phone" to "इस फ़ोन को उनके फ़ोन पर खुले परिवार पेज की तरफ़ कीजिए"),
+        "sharePointNote" to ("Hold it so the words under \"Connect a phone\" are in the picture. It connects by itself." to "ऐसे पकड़िए कि \"Connect a phone\" के नीचे लिखे शब्द तस्वीर में आएँ। यह अपने आप जुड़ जाएगा।"),
+        "editWhen" to ("When it is taken" to "कब लेनी है"),
+        "timeMorning" to ("Morning" to "सुबह"),
+        "timeAfternoon" to ("Afternoon" to "दोपहर"),
+        "timeNight" to ("Night" to "रात"),
+        "editMore" to ("More details printed on the strip" to "पट्टी पर छपी और जानकारी"),
+        "editLess" to ("Hide the details" to "जानकारी छिपाएँ"),
+        "askCamera" to ("Ask" to "पूछें"),
+        "askCameraStop" to ("Listening. Tap when done" to "सुन रहा हूँ। बोलकर दबाएँ"),
+        "askCameraThinking" to ("One moment" to "एक पल"),
+        "peopleAddTitle" to ("Add a person" to "व्यक्ति जोड़ें"),
+        "health" to ("Health" to "सेहत"),
+        "healthOf" to ("{n} · THIS WEEK" to "{n} · इस हफ़्ते"),
+        "healthShare" to ("of the doses that came up were marked" to "आई हुई खुराकें दर्ज हुईं"),
+        "healthCounts" to ("{m} marked · {x} not marked · {u} not sure" to "{m} दर्ज · {x} दर्ज नहीं · {u} पक्का नहीं"),
+        "healthWeek" to ("The week at a glance" to "एक नज़र में हफ़्ता"),
+        "healthDays" to ("Day by day" to "दिन-ब-दिन"),
+        "tabPeople" to ("People" to "लोग"),
+        "tabShare" to ("Share" to "साझा"),
+        "shareFiles" to ("Files for the family" to "परिवार के लिए फ़ाइलें"),
+        "peopleUsing" to ("Using now" to "अभी इस्तेमाल में"),
+        "peopleSwitch" to ("Switch" to "बदलें"),
+        "peopleWeek" to ("{p}% marked this week" to "इस हफ़्ते {p}% दर्ज"),
+        "peopleNeeds" to ("{n} doses need a look. See Health." to "{n} खुराकें ध्यान माँगती हैं। सेहत में देखिए।"),
+        "sayTimes" to ("Say when it is taken" to "बोलकर बताएँ कब लेनी है"),
+        "sayTimesStop" to ("Stop, I have said it" to "रुकें, बोल दिया"),
+        "sayTimesHeard" to ("Heard: \"{t}\". The times are set below. Check them." to "सुना: \"{t}\"। समय नीचे रख दिए हैं। जाँच लीजिए।"),
+        "sayTimesNoTime" to ("Heard: \"{t}\". No time of day in that. Say, for example, \"morning and night\"." to "सुना: \"{t}\"। इसमें कोई समय नहीं मिला। जैसे कहिए, \"सुबह और रात\"।"),
+        "sayTimesNothing" to ("Nothing was heard. Hold the phone closer and try again." to "कुछ सुनाई नहीं दिया। फ़ोन पास रखकर फिर कोशिश कीजिए।"),
+        "roundAt" to ("Medicine {i} of {n}" to "{n} में से दवा {i}"),
+        "roundSkip" to ("Skip this one" to "इसे छोड़ें"),
+        "famManaging" to ("Medicines of {n}" to "{n} की दवाएँ"),
+        "famLock" to ("Lock" to "लॉक करें"),
+        "famListIntro" to ("Everything the phone checks a strip against is saved here by the family." to "फ़ोन पट्टी को जिन बातों से मिलाता है, वे सब परिवार यहाँ सेव करता है।"),
+        "editShort" to ("Edit" to "बदलें"),
+        "kvWhose" to ("Whose" to "किसकी"),
+        "kvBrand" to ("Brand" to "ब्रांड"),
+        "kvMedicine" to ("Medicine" to "दवा"),
+        "kvStrength" to ("Strength" to "मात्रा"),
+        "kvWhen" to ("When" to "कब"),
+        "addByCamera" to ("Show the strip to the camera" to "पट्टी कैमरे को दिखाएँ"),
+        "addByCameraSub" to ("The phone reads the name and strength off the strip and you check them." to "फ़ोन पट्टी से नाम और मात्रा पढ़ता है, आप जाँच लेते हैं।"),
+        "addByRxSub" to ("Sets the times the doctor wrote for strips you have saved." to "सेव की हुई पट्टियों के लिए डॉक्टर के लिखे समय रख देता है।"),
+        "addByTypingSub" to ("For drops, syrups, or a strip you do not have at hand." to "ड्रॉप, सिरप या ऐसी पट्टी के लिए जो अभी पास नहीं है।"),
+        "listFile" to ("The list as a file" to "सूची फ़ाइल के रूप में"),
+        "secReminders" to ("Reminders" to "याद दिलाना"),
+        "secPeople" to ("People" to "लोग"),
+        "secLink" to ("Family far away" to "दूर बैठा परिवार"),
+        "secDemo" to ("For the presenter" to "दिखाने वाले के लिए"),
+        "secPerson" to ("Names, family contact and PIN" to "नाम, परिवार का संपर्क और PIN"),
+        "secVoice" to ("Voice" to "आवाज़"),
+        "tabWeek" to ("Week" to "हफ़्ता"),
+        "weekTitle" to ("{n}: the last seven days" to "{n}: पिछले सात दिन"),
+        "weekShare" to ("of doses marked" to "खुराकें दर्ज"),
+        "weekMarked" to ("Marked" to "दर्ज"),
+        "weekNotMarked" to ("Not marked" to "दर्ज नहीं"),
+        "weekNotSure" to ("Not sure" to "पक्का नहीं"),
+        "weekLater" to ("Later" to "बाद में"),
+        "weekLate" to ("Late, {t}" to "देर से, {t}"),
+        "weekNeeds" to ("Needs a look" to "ध्यान देने लायक़"),
+        "weekNothing" to ("Nothing needs a look." to "कुछ भी ध्यान देने लायक़ नहीं।"),
+        "weekNoDoses" to ("No doses saved for this day." to "इस दिन की कोई खुराक सेव नहीं।"),
+        "weekFoot" to ("This shows what was recorded on the phone. \"Marked\" means the person confirmed the dose here." to "यह वही दिखाता है जो फ़ोन पर दर्ज हुआ। \"दर्ज\" का मतलब है कि व्यक्ति ने यहाँ खुराक की पुष्टि की।"),
+        "peopleTitle" to ("People on this phone" to "इस फ़ोन पर लोग"),
+        "peopleIntro" to ("Add a person, then set whose each medicine is in its edit screen. Today shows one person at a time, and the camera says when a strip is somebody else's." to "व्यक्ति जोड़िए, फिर हर दवा के एडिट पेज में चुनिए कि वह किसकी है। आज का पेज एक समय में एक व्यक्ति दिखाता है, और कैमरा बताता है जब पट्टी किसी और की हो।"),
+        "peopleFirst" to ("First person" to "पहला व्यक्ति"),
+        "peopleCount" to ("{n} medicines" to "{n} दवाएँ"),
+        "peopleName" to ("What they are called, like Papa" to "उन्हें क्या कहते हैं, जैसे Papa"),
+        "peopleNameHi" to ("The same in Hindi (optional)" to "वही हिंदी में (ज़रूरी नहीं)"),
+        "peopleAdd" to ("Add this person" to "यह व्यक्ति जोड़ें"),
+        "ownerField" to ("Whose medicine it is" to "यह दवा किसकी है"),
+        "alarmMarkedAt" to ("Marked {t}" to "{t} पर दर्ज"),
+        "alarmMark" to ("Mark" to "दर्ज करें"),
+        "askFindIt" to ("Find it with the camera" to "कैमरे से ढूँढें"),
+        "linkTitle" to ("Family link" to "परिवार से जुड़ाव"),
+        "linkIntro" to ("Off unless you turn it on. When on, this phone sends its battery level, whether it is charging, and the week of doses to your own family computer. No photos, recordings or prescriptions. The message is sealed with the pairing code." to "जब तक आप चालू न करें, बंद रहता है। चालू होने पर यह फ़ोन अपनी बैटरी, चार्जिंग की हालत और हफ़्ते की खुराकें आपके अपने परिवार के कंप्यूटर को भेजता है। कोई फ़ोटो, रिकॉर्डिंग या पर्चा नहीं। संदेश पेयरिंग कोड से सील होता है।"),
+        "linkUrl" to ("Family computer address, like http://192.168.1.5:8765" to "परिवार के कंप्यूटर का पता, जैसे http://192.168.1.5:8765"),
+        "linkCode" to ("Pairing code shown by the family server" to "परिवार सर्वर का पेयरिंग कोड"),
+        "linkOn" to ("Send to the family computer" to "परिवार के कंप्यूटर को भेजें"),
+        "linkSend" to ("Save and send now" to "सेव करें और अभी भेजें"),
+        "linkLast" to ("Last try: {t}" to "पिछली कोशिश: {t}"),
+        "alarmWhichOne" to ("Which one now?" to "अभी कौन-सी?"),
+        "alarmStopSound" to ("Stop the sound" to "आवाज़ बंद करें"),
+        "alarmSnooze" to ("Remind me in 10 minutes" to "10 मिनट बाद याद दिलाएँ"),
+        "alarmAllMarked" to ("Everything for this time is marked." to "इस समय की सब दवाइयाँ दर्ज हो गईं।"),
+        "rxOpen" to ("Read a doctor's prescription" to "डॉक्टर का पर्चा पढ़वाएँ"),
+        "rxTitle" to ("The doctor's prescription" to "डॉक्टर का पर्चा"),
+        "rxIntro" to ("Pick a photo or PDF of the prescription. The phone matches each line with a strip you have saved and shows the times the doctor wrote. The picture is not kept." to "पर्चे की फ़ोटो या PDF चुनिए। फ़ोन हर लाइन को आपकी सेव पट्टी से मिलाता है और डॉक्टर के लिखे समय दिखाता है। तस्वीर रखी नहीं जाती।"),
+        "rxPick" to ("Pick the photo or PDF" to "फ़ोटो या PDF चुनें"),
+        "rxReading" to ("Reading the prescription. Handwriting can take half a minute." to "पर्चा पढ़ा जा रहा है। हाथ की लिखावट में आधा मिनट लग सकता है।"),
+        "rxFailed" to ("That file could not be opened as a picture or PDF." to "यह फ़ाइल तस्वीर या PDF की तरह नहीं खुली।"),
+        "rxNothing" to ("No line could be placed on a saved strip. The writing may be too hard to read. Enter the times yourself in the list." to "कोई लाइन सेव पट्टी से नहीं मिली। लिखावट पढ़ने में मुश्किल हो सकती है। समय ख़ुद सूची में भरिए।"),
+        "rxCheck" to ("Check every line against the paper before you use it." to "इस्तेमाल से पहले हर लाइन काग़ज़ से मिला लीजिए।"),
+        "rxCheckModel" to ("Check every line against the paper before you use it." to "इस्तेमाल से पहले हर लाइन काग़ज़ से मिला लीजिए।"),
+        "rxWritten" to ("Read on the paper: {t}" to "काग़ज़ पर पढ़ा: {t}"),
+        "rxWhich" to ("This line fits more than one of your strips. Which one did the doctor mean?" to "यह लाइन आपकी एक से ज़्यादा पट्टियों से मिलती है। डॉक्टर का मतलब कौन सी है?"),
+        "rxNotSaved" to ("Not one of your saved strips. Scan this strip to add it." to "यह आपकी सेव पट्टियों में नहीं है। इसे जोड़ने के लिए पट्टी स्कैन कीजिए।"),
+        "rxConflict" to ("The prescription says {w}. Your saved strip is {s}. Ask the chemist or the doctor before using this strip." to "पर्चे पर {w} लिखा है। आपकी सेव पट्टी {s} की है। इस पट्टी को लेने से पहले केमिस्ट या डॉक्टर से पूछिए।"),
+        "rxApply" to ("Set its times to {t}" to "इसका समय {t} रखें"),
+        "rxApplied" to ("Its times are set." to "इसका समय रख दिया गया।"),
+        "voiceNoteTitle" to ("A message in your own voice" to "आपकी अपनी आवाज़ में संदेश"),
+        "voiceNoteHint" to ("Record up to ten seconds, for example \"Maa, this is your BP tablet.\" The phone plays it after it names this strip." to "दस सेकंड तक रिकॉर्ड कीजिए, जैसे \"माँ, यह आपकी बीपी की गोली है।\" पट्टी का नाम बताने के बाद फ़ोन इसे सुनाएगा।"),
+        "voiceNoteRecord" to ("Record" to "रिकॉर्ड करें"),
+        "voiceNoteStop" to ("Stop and save" to "रोकें और सेव करें"),
+        "voiceNotePlay" to ("Play it" to "सुनें"),
+        "voiceNoteDelete" to ("Delete it" to "हटाएँ"),
+        "voiceNoteSaved" to ("A message is saved for this medicine." to "इस दवा के लिए संदेश सेव है।"),
+        "voiceNoteFailed" to ("The message was not saved. Try again, a little longer." to "संदेश सेव नहीं हुआ। दोबारा कोशिश कीजिए, थोड़ा लंबा बोलिए।"),
+        "demoTimeTitle" to ("Demo time" to "डेमो का समय"),
+        "demoTimeOff" to ("The app uses the real time." to "ऐप असली समय पर चल रहा है।"),
+        "demoTimeOn" to ("Demo time is on. The app believes it is {t}. Alarms still ring by the real time. It goes back to the real time when the app is restarted." to "डेमो समय चालू है। ऐप के हिसाब से अभी {t} हैं। अलार्म असली समय से ही बजेंगे। ऐप दोबारा खोलने पर असली समय लौट आएगा।"),
+        "demoTimeNext" to ("Jump to the next dose time" to "अगली खुराक के समय पर जाएँ"),
+        "demoTimeReal" to ("Back to the real time" to "असली समय पर लौटें"),
+        "purposeAsk" to ("What is {n} for? From its ingredient ({g}) it looks like a {p}. The phone will then say \"your {p}\"." to "{n} किस लिए है? इसके घटक ({g}) से यह {p} लगती है। फिर फ़ोन \"आपकी {p}\" कहेगा।"),
+        "purposeYes" to ("Yes, call it that" to "हाँ, यही कहिए"),
+        "purposeNo" to ("No" to "नहीं"),
+        "purposeField" to ("What it is for" to "यह किस लिए है"),
+        "purposeNone" to ("Not set" to "तय नहीं"),
+        "purposeAskAi" to ("Suggest what it is for" to "सुझाव लें कि यह किस लिए है"),
+        "purposeAiNote" to ("This is a suggestion. Check it against the prescription before saving." to "यह सुझाव है। सेव करने से पहले पर्चे से मिला लें।"),
+        "purposeAiUnknown" to ("No suggestion for this one. Pick it yourself or leave it." to "इसके लिए कोई सुझाव नहीं। ख़ुद चुनिए या छोड़ दीजिए।"),
+        "purposeFromTable" to ("Suggested from the ingredients. Change it if it is wrong." to "घटकों से सुझाया गया। ग़लत हो तो बदल दीजिए।"),
+        "recordReportedDose" to ("Record a dose I already took" to "पहले ली हुई खुराक दर्ज करें"),
+        "sceneNotSaved" to ("Not one of your saved medicines" to "यह आपकी सेव दवाओं में नहीं है"),
+        "homingHint" to ("This is the one that is due. The ticking gets faster as it reaches the centre." to "यही दवा अभी की है। यह बीच में आते ही टिक-टिक तेज़ होती है।"),
+        "noHindiVoice" to ("No Hindi voice on this phone. Hindi is read out in Roman letters by the English voice until one is added below." to "इस फ़ोन में हिंदी आवाज़ नहीं है। जब तक नीचे से जोड़ी न जाए, हिंदी को अंग्रेज़ी आवाज़ रोमन अक्षरों में पढ़ेगी।"),
+        "chkHiNo" to ("No Hindi voice. Hindi is read out in Roman letters by the English voice. Add a Hindi voice in the phone's speech settings." to "हिंदी आवाज़ नहीं है। हिंदी को अंग्रेज़ी आवाज़ रोमन अक्षरों में पढ़ेगी। फ़ोन की स्पीच सेटिंग में हिंदी आवाज़ जोड़िए।"),
+        "notAModel" to ("That file is not the model, so nothing was changed. The model file is gemma-4-E2B-it.litertlm, about 2.5 GB." to "यह फ़ाइल मॉडल नहीं है, इसलिए कुछ नहीं बदला गया। मॉडल की फ़ाइल gemma-4-E2B-it.litertlm है, लगभग 2.5 GB।"),
+        "boxDiffers" to ("Different print" to "छपाई अलग है"),
+        "repeatShort" to ("Repeat" to "फिर सुनें"),
+        "voiceOff" to ("Voice off" to "आवाज़ बंद"),
+        "voiceOn" to ("Voice on" to "आवाज़ चालू"),
+        "zoomShort" to ("Zoom" to "ज़ूम"),
+        "torchShort" to ("Torch" to "टॉर्च"),
+        "looksLike" to ("Looks like {n}" to "{n} जैसी लगती है"),
+        "frameHint" to ("Bring the strip into the frame, printed side up." to "पट्टी को फ़्रेम में लाइए, छपी तरफ़ ऊपर।"),
+        "installVoice" to ("Add or check the phone's voices (Hindi, English)" to "फ़ोन की आवाज़ें जोड़ें या जाँचें (हिंदी, अंग्रेज़ी)"),
+        "zoomIn" to ("Zoom in for small print" to "छोटी लिखावट के लिए ज़ूम करें"),
+        "zoomOut" to ("Zoom out" to "ज़ूम हटाएँ"),
+        "handHint" to ("Touch a strip to ask about it. The ticking gets faster as your hand nears the one that is due." to "पूछने के लिए पट्टी को छुएँ। हाथ सही दवा के पास आते ही टिक-टिक तेज़ होती है।"),
+        "liveReaderMs" to ("Second reader on this phone (Gemma): {n} ms" to "इसी फ़ोन का दूसरा पाठक (जेमा): {n} ms"),
+        "zoomOut" to ("Zoom out" to "ज़ूम हटाएँ"),
+        "repeatGuidance" to ("Repeat guidance" to "निर्देश फिर सुनें"),
+        "stopGuidance" to ("Stop voice" to "आवाज़ रोकें"),
+        "startGuidance" to ("Voice guidance" to "आवाज़ में निर्देश"),
+        "openScanResult" to ("Open medicine details" to "दवा की जानकारी खोलें"),
+        "findScheduledMedicine" to ("Find my medicine" to "मेरी दवा ढूँढें"),
+        "scanVoiceUnavailable" to ("Offline speech is not ready. Use the text or ask someone to help set up a voice." to "ऑफ़लाइन आवाज़ तैयार नहीं है। लिखी जानकारी देखें या आवाज़ चालू करने में मदद लें।"),
+        "nameScheduleTitle" to ("Saved schedule by name" to "नाम से सेव समय"),
+        "openToday" to ("Open today's medicines" to "आज की दवाएँ खोलें"),
+        "nameScanGuide" to ("Show the medicine names. Colours show saved schedules. Tap a box for details." to "दवाओं के नाम दिखाएँ। रंग सेव समय दिखाते हैं। जानकारी के लिए बॉक्स दबाएँ।"),
+        "fileWorking" to ("Opening or saving the file. Please wait." to "फ़ाइल खुल या सेव हो रही है। थोड़ा इंतज़ार कीजिए।"),
+        "fileReadFailed" to ("The file could not be read. Choose the list file again." to "फ़ाइल नहीं पढ़ी गई। सूची की फ़ाइल फिर चुनिए।"),
+        "cameraFailed" to ("The camera could not start. Go back and try Scan again." to "कैमरा शुरू नहीं हुआ। वापस जाकर फिर स्कैन कीजिए।"),
+    )
+}

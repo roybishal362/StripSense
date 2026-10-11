@@ -1,27 +1,67 @@
 # StripSense
 
-StripSense reads the print on a medicine strip and checks it against the family's list. It refuses when the brand, generic names, strength or release word differs. It says whether this dose is marked and records a mark only after confirmation.
+An older person has several medicine strips on the table and cannot read the print. An alarm rings. StripSense finds the strip that is due, by sound and touch, and asks before it marks the dose. If the print on a strip differs from the family's saved strip, it refuses.
 
-Build with `gradlew.bat :app:assembleDebug`. To install when ready, connect the phone and run `gradlew.bat :app:installDebug`, then `adb shell am start -n app.stripsense/.MainActivity`. This build needs Android 12 or later; the target demo phone is the iQOO 15. The family PIN starts as `1234`.
+Reading, speaking and deciding all run on the phone. The network is used for one thing only: the optional family link, which is off until the family turns it on. It sends one sealed message (battery, charging and the week of doses) that only the family's own code can open. Scanning, voice, alarms and storage work with no network.
 
-Copy `gemma-4-E2B-it.litertlm` to the phone with Office Kit or USB. In Family > Settings, choose the model file. Wait for Ready; GPU is tried first, then CPU. The expected size is 2,588,147,712 bytes. For development, `adb push gemma-4-E2B-it.litertlm /data/local/tmp/` is also supported. The model is separate from the APK. Install offline English and Hindi TextToSpeech voices in Android settings before the demo.
+## What it does
 
-Teach each active camera medicine in Family > Teach. Show a strip until its whole print matches twice, then press Save strip. Save up to four views per medicine. The look check may refuse a print match; it never names a strip on its own.
+1. **The family shows each strip once.** The phone reads the label, the family reviews it and sets the prescribed times. The photos and the text read from them are saved.
+2. **At the saved time the phone rings.** It asks again every two minutes and stops thirty minutes after the saved time. The reminder offers: Find my medicine, I've taken it, I'm not sure, Remind me later.
+3. **Find my medicine opens the camera.** Every strip in view is followed on its own. The phone speaks where the due strip is. It also ticks, and the ticking gets faster as the due strip comes to the centre of the view. When the strip is centred there is one firm pulse. Held there, its answer opens by itself.
+4. **The phone asks "Are you taking it now?"** A dose is marked only by an answer to that question: a press on Yes, the sound of the tablet pushed out of its strip while the question is open, or in "Touch only" two knocks on the phone or a volume button. The phone says what it marked and Undo stays for a minute. Scanning, waiting and closing never mark anything.
+5. **By touch.** The phone has a vibration motor at each end. A tick at one end means move the phone that way, and the ticks come faster as the strip nears the middle. One long swelling buzz is yes, two sharp knocks is no, and each kind of medicine has its own rhythm. With "Touch only" on, the phone is silent and a whole dose is done by feel (`core/guide/FeelLanguage.kt`, `ui/shell/Feel.kt`).
+6. **The family far away.** With the family link on, a son or daughter opens one page and sees the week, and for each marked dose how the phone knows: seen and heard, strip seen, or button pressed. The relay that carries the message cannot open it (the `backend` folder).
 
-Long-press Today, choose Seed yesterday, then Fresh day. Run these five checks on real strips:
+## How a strip is recognised
 
-1. The listed fever tablet: names 500 mg, says the morning dose is not marked, and asks whether to mark it. Yes shows the mark at 8:05 am with Undo.
-2. The same strip again: says the morning dose is already marked; no question.
-3. Another strength: says “Careful: this strip says…” and refuses.
-4. Covered strength: says “I can't read this one. Could you turn it over?”
-5. A strip outside the list: says “I don't recognise this one…”
+- **Print signature.** Each saved medicine is known by its reviewed label and by every word and number the phone read from its own saved photos (`core/PrintIndex.kt`). A strip is compared with what that strip really prints.
+- **Evidence over frames.** Foil is shiny and one camera frame rarely shows everything. Each frame adds votes for what it could read. The answer comes from the last 2.5 seconds together (`core/PrintEvidence.kt`). Old readings expire, so a strip swapped in at the same place inherits nothing.
+- **Checked** needs the saved name read in two frames, the telling strength read in two frames, and nothing that differs.
+- **A difference is a refusal.** A number the saved strip never showed, an extra word such as PLUS or SR, or another saved medicine's ingredient. 650 is never treated as a misread of 500.
+- **Misreads are outvoted.** The phone sometimes reads one "325" in three as 225. A number that is nearly the saved number is ignored only when the saved number is read at least twice as often on the same strip.
+- **A torn piece** with no name on it can be offered as a possible match from the words left on it. It is never an answer and never opens a dose question.
+- **Name only.** If the name is read but the strength is not, the phone says so and does not lead the hand to that strip.
 
-Repeat in Hindi. Hindi speech falls back to English if an offline Hindi voice is missing. Family > Files saves list.csv and week.csv into Download/StripSense. Open `laptop/family.html` offline and drop the exported file onto it. Numbers records trial results without writing dose marks.
+The models all run on the phone: ML Kit reads the print, a MediaPipe hand model finds a pointing finger, Gemma (LiteRT-LM, on the GPU) drafts a label when a strip is taught, reads the strength a second time on the answer screen and answers spoken questions, and Android's offline voice speaks. Every spoken answer is a fixed sentence from `core/Sentences.kt`, so no model can invent a dose.
 
-The phone uses bundled ML Kit Text Recognition, MediaPipe Image Embedder with MobileNet V3 small, Gemma 4 E2B through LiteRT-LM, and Android TextToSpeech. The APK has no internet permission. Check with `adb shell dumpsys package app.stripsense`; CAMERA, RECORD_AUDIO, VIBRATE and an AndroidX internal receiver permission are expected; INTERNET must be absent.
+## What has been checked, and what has not
 
-The app does not give medical advice, identify loose tablets or fake medicines, or support languages beyond English and Hindi. Android Jetpack, CameraX, MediaPipe, MobileNet V3, LiteRT-LM, Gemma 4 E2B, kotlinx.serialization and kotlinx.coroutines use Apache 2.0. ML Kit is a free Google library under the ML Kit terms; it is not open source.
+- 560 unit tests in 64 classes pass, and 15 tests of the relay. `core/` is pure Kotlin. `PrintEvidenceTest` uses the text the phone really read from three strips, with its misreads. `HearTabletTest` uses real recordings of a tablet and of busy rooms.
+- On the phone, the read-only check (`scanOnly`) passes its 3 fixtures. The four saved strip photos were each read again as one still picture and shown to the engine with that photo left out of what it learned from: the strict rule named 1 as itself and none wrongly. An earlier run on six photos named 6 of 6, but that was another set of photos and two rules had been added after a first run of 4 of 6. Neither is a live accuracy figure. The live camera gathers print over many frames and does better than one still; that has not been measured.
+- The touch language, the two knocks and hearing the tablet were checked from the phone's own records and with recorded sound. Nobody blind or deaf has tried them, and there is no figure for how often the phone hears a tablet rightly.
+- Not measured: live accuracy on moving strips, a real wrong-strength strip, glare, and alarm delivery with the screen off or in battery saver.
 
-Built at the iQOO Hackathon 2026 Grand Finale, 9 to 11 October 2026. The `docs/` folder holds design notes written before the event. All code was written during the event.
+It gives no medical advice. It never says a dose was taken, only that it was marked.
 
-Build status and the deferred testing queue are in `TESTING-HANDOFF.md`.
+## Build
+
+The project is this folder. From here:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build-local.ps1
+```
+
+This runs the unit tests and builds `app/build/outputs/apk/debug/app-debug.apk` offline. It is a debug build, not a signed release.
+
+The read-only check on the phone's saved photos:
+
+```powershell
+adb shell am instrument -w -e scanOnly true app.stripsense.test/app.stripsense.device.CoreDeviceChecks
+```
+
+The relay and the family page, from the `backend` folder (Python, standard library only):
+
+```powershell
+python -m stripsense_backend relay
+```
+
+Then open `http://127.0.0.1:8765`.
+
+The model file is `gemma-4-E2B-it.litertlm`. Choose it in first-run setup or in Family > Settings. The app works without it: scanning, reminders and marking do not need it.
+
+## Set up your own medicines
+
+1. On a new phone the setup screen asks for the person's name, the family contact, a family PIN and the permissions.
+2. Family > List > Scan a new medicine. Capture the name and the composition. Review the draft, choose the prescribed times, confirm and save.
+3. Family > Teach adds more views of a strip, up to eight. A photo that shows another strength or another saved name is refused.

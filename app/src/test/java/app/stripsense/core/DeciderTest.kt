@@ -1,5 +1,15 @@
 package app.stripsense.core
 
+import app.stripsense.core.domain.*
+import app.stripsense.core.text.*
+import app.stripsense.core.scan.*
+import app.stripsense.core.teach.*
+import app.stripsense.core.guide.*
+import app.stripsense.core.dose.*
+import app.stripsense.core.say.*
+import app.stripsense.core.voice.*
+import app.stripsense.core.report.*
+
 import app.stripsense.core.Fixtures.LIST
 import app.stripsense.core.Fixtures.M1
 import app.stripsense.core.Fixtures.M2
@@ -124,4 +134,20 @@ class DeciderTest {
         val typed = M1.copy(brand = "Fevora", generics = listOf("paracetamol"))
         assertEquals(Verdict.Match(typed), decide("FEVORA 500 / Paracetamol 500 mg", times = 2, meds = listOf(typed)))
     }
+    @Test fun extraKnownGenericCannotNameTheStrip() = assertEquals(
+        Verdict.NotSure,
+        decide("FEVORA / Paracetamol 500 mg / Metformin 500 mg", times = 2),
+    )
+
+    @Test fun decimalCommaCannotBecomeFiveMilligrams() {
+        for (med in listOf(M3, M3.copy(status = MedStatus.ACTIVE))) {
+            assertEquals(Verdict.Unreadable, decide("AMLOVA / Amlodipine 2,5 mg", times = 2, meds = listOf(med)))
+        }
+    }
+
+    @Test fun commasBetweenCompleteStrengthsStillParse() = assertEquals(
+        setOf(Strength("500", StrengthUnit.MG), Strength("250", StrengthUnit.IU)),
+        StripParser.strengthsIn("500mg,250IU"),
+    )
+
 }

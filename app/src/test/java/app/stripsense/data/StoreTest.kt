@@ -1,11 +1,12 @@
 package app.stripsense.data
 
-import app.stripsense.core.DoseEvent
-import app.stripsense.core.EventKind
-import app.stripsense.core.EventSource
-import app.stripsense.core.Look
-import app.stripsense.core.StoreData
+import app.stripsense.core.domain.DoseEvent
+import app.stripsense.core.domain.EventKind
+import app.stripsense.core.domain.EventSource
+import app.stripsense.core.domain.Look
+import app.stripsense.core.domain.StoreData
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -36,12 +37,148 @@ class StoreTest {
         b.close()
     }
 
-    @Test fun brokenFileFallsBackToFresh() {
+    @Test fun brokenFileIsNeverWrittenOver() {
+        val dir = tempDir()
+        val file = File(dir, "store.json")
+        file.writeText("{ not json")
+        val s = Store(dir, DemoData::fresh)
+        assertTrue(s.unreadable.value)
+        s.setLanguage("hi")
+        s.addEvent(event)
+        s.flush()
+        assertEquals("{ not json", file.readText())
+        assertFalse(s.saveLook(Look("l1", "fever-tablet", listOf(1f), "")))
+        assertFalse(s.completeSetup(DemoData.person))
+        assertTrue(s.writeFailed.value)
+        s.close()
+        assertEquals("{ not json", file.readText())
+    }
+
+    @Test fun brokenFileIsReadAgainOnceItIsReadable() {
+        val dir = tempDir()
+        val file = File(dir, "store.json")
+        val good = DemoData.fresh().copy(events = listOf(event), language = "hi")
+        file.writeText("{ not json")
+        val s = Store(dir, DemoData::fresh)
+        assertFalse(s.retryLoad())
+        file.writeText(Store.JSON.encodeToString(StoreData.serializer(), good))
+        assertTrue(s.retryLoad())
+        assertFalse(s.unreadable.value)
+        assertEquals(good, s.data.value)
+        s.setLanguage("en")
+        s.close()
+        assertEquals("en", Store(dir, DemoData::fresh).data.value.language)
+    }
+
+    @Test fun startingEmptyKeepsTheUnreadableFile() {
         val dir = tempDir()
         File(dir, "store.json").writeText("{ not json")
         val s = Store(dir, DemoData::fresh)
-        assertEquals(DemoData.fresh(), s.data.value)
+        assertTrue(s.startEmpty(77L))
+        assertFalse(s.unreadable.value)
+        assertEquals("{ not json", File(dir, "store-unreadable-77.json").readText())
+        s.addEvent(event)
         s.close()
+        val again = Store(dir, DemoData::fresh)
+        assertFalse(again.unreadable.value)
+        assertEquals(listOf(event), again.data.value.events)
+        again.close()
+    }
+
+    /** Stands in for the phone's keystore: not real secrecy, but it changes every byte and notices a changed one. */
+    private val cipher = object : StoreCipher {
+        override fun seal(plain: ByteArray) = ByteArray(plain.size + 1).also { out ->
+            for (i in plain.indices) out[i] = (plain[i].toInt() xor 0x5A).toByte()
+            out[plain.size] = plain.sum().toByte()
+        }
+        override fun open(sealed: ByteArray): ByteArray {
+            val plain = ByteArray(sealed.size - 1) { (sealed[it].toInt() xor 0x5A).toByte() }
+            check(plain.sum().toByte() == sealed.last()) { "changed" }
+            return plain
+        }
+    }
+
+    @Test fun sealedStoreKeepsItsDataAndTheFileShowsNothing() {
+        val dir = tempDir()
+        val a = Store(dir, cipher, DemoData::fresh)
+        a.setPerson(DemoData.person.copy(pin = "4821"))
+        a.addEvent(event)
+        a.close()
+        val onDisk = File(dir, "store.json").readBytes()
+        assertTrue(Sealed.isSealed(onDisk))
+        assertFalse(String(onDisk, Charsets.ISO_8859_1).contains("4821"))
+        assertFalse(String(onDisk, Charsets.ISO_8859_1).contains("fever"))
+        val b = Store(dir, cipher, DemoData::fresh)
+        assertFalse(b.unreadable.value)
+        assertEquals("4821", b.data.value.person.pin)
+        assertEquals(listOf(event), b.data.value.events)
+        b.close()
+    }
+
+    @Test fun plainFileFromAnOlderBuildIsReadOnceAndThenSealed() {
+        val dir = tempDir()
+        val old = Store(dir, DemoData::fresh)
+        old.addEvent(event)
+        old.close()
+        assertFalse(Sealed.isSealed(File(dir, "store.json").readBytes()))
+        val s = Store(dir, cipher, DemoData::fresh)
+        assertEquals(listOf(event), s.data.value.events)
+        s.setLanguage("hi")
+        s.close()
+        assertTrue(Sealed.isSealed(File(dir, "store.json").readBytes()))
+        assertEquals(listOf(event), Store(dir, cipher, DemoData::fresh).data.value.events)
+    }
+
+    @Test fun changedSealedFileIsUnreadableAndIsKept() {
+        val dir = tempDir()
+        val a = Store(dir, cipher, DemoData::fresh)
+        a.addEvent(event)
+        a.close()
+        val file = File(dir, "store.json")
+        val changed = file.readBytes().also { it[it.size - 5] = (it[it.size - 5] + 1).toByte() }
+        file.writeBytes(changed)
+        val b = Store(dir, cipher, DemoData::fresh)
+        assertTrue(b.unreadable.value)
+        b.setLanguage("hi")
+        b.close()
+        assertTrue(file.readBytes().contentEquals(changed))
+    }
+
+    @Test fun sealedFileWithoutAKeyIsUnreadableNotEmpty() {
+        val dir = tempDir()
+        Store(dir, cipher, DemoData::fresh).apply { addEvent(event); close() }
+        val before = File(dir, "store.json").readBytes()
+        val s = Store(dir, DemoData::fresh)
+        assertTrue(s.unreadable.value)
+        s.addEvent(event)
+        s.close()
+        assertTrue(File(dir, "store.json").readBytes().contentEquals(before))
+    }
+
+    @Test fun aCipherThatCannotReadItsOwnWorkNeverReplacesTheFile() {
+        val broken = object : StoreCipher {
+            override fun seal(plain: ByteArray) = plain
+            override fun open(sealed: ByteArray) = ByteArray(sealed.size)
+        }
+        val dir = tempDir()
+        val s = Store(dir, broken, DemoData::fresh)
+        s.addEvent(event)
+        s.flush()
+        assertTrue(s.writeFailed.value)
+        assertFalse(File(dir, "store.json").exists())
+        assertFalse(s.saveLook(Look("l1", "fever-tablet", listOf(1f), "")))
+        s.close()
+    }
+
+    @Test fun setupIsSavedBeforeItIsReported() {
+        val dir = tempDir()
+        val s = Store(dir, DemoData::fresh)
+        val person = DemoData.person.copy(pin = "4821")
+        assertTrue(s.completeSetup(person))
+        val again = Store(dir, DemoData::fresh)
+        assertEquals(person, again.data.value.person)
+        assertTrue(again.data.value.checkSeen)
+        s.close(); again.close()
     }
 
     @Test fun unknownKeysAreIgnored() {
