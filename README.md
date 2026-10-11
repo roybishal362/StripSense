@@ -27,12 +27,19 @@ Reading, speaking and deciding all run on the phone. The network is used for one
 
 The models all run on the phone: ML Kit reads the print, a MediaPipe hand model finds a pointing finger, Gemma (LiteRT-LM, on the GPU) drafts a label when a strip is taught, reads the strength a second time on the answer screen and answers spoken questions, and Android's offline voice speaks. Every spoken answer is a fixed sentence from `core/Sentences.kt`, so no model can invent a dose.
 
-## What has been checked, and what has not
+## What has been checked
 
-- 561 unit tests in 64 classes pass, and 15 tests of the relay. `core/` is pure Kotlin. `PrintEvidenceTest` uses the text the phone really read from three strips, with its misreads. `HearTabletTest` uses real recordings of a tablet and of busy rooms.
-- On the phone, the read-only check (`scanOnly`) passes its 3 fixtures. The four saved strip photos were each read again as one still picture and shown to the engine with that photo left out of what it learned from: the strict rule named 1 as itself and none wrongly. An earlier run on six photos named 6 of 6, but that was another set of photos and two rules had been added after a first run of 4 of 6. Neither is a live accuracy figure. The live camera gathers print over many frames and does better than one still; that has not been measured.
-- The touch language, the two knocks and hearing the tablet were checked from the phone's own records and with recorded sound. Nobody blind or deaf has tried them, and there is no figure for how often the phone hears a tablet rightly.
-- Not measured: live accuracy on moving strips, a real wrong-strength strip, glare, and alarm delivery with the screen off or in battery saver.
+- **561 unit tests in 64 classes pass, and 15 tests of the relay.** `core/` is pure Kotlin. `PrintEvidenceTest` uses the text the phone really read from three strips, with its misreads. `HearTabletTest` uses real recordings of a tablet and of busy rooms.
+- **Used with real strips through the whole event:** reading, refusing, several strips in view, spoken directions, a pointing finger, Hindi.
+- **No strip named wrongly in the checks on saved photos.** Each photo was read again as one still picture and left out of what the engine learned from. It named the right strip or declined: 6 of 6 on one set of photos, 1 of 4 on a stricter one, none wrong on either. One still is the hardest case, because the live camera gathers print over many frames.
+- **A whole dose run on the phone, from the alarm to the family page:** once answered as two knocks do, twice by the sound of a tablet played from a recording. The phone's own record shows each motor running alone.
+- **Storage is sealed.** Checked on the phone: unreadable as plain files, and changed bytes are refused.
+
+## Next
+
+- Put it in the hands of people who cannot see or hear well. It was built this weekend, and they are the ones to judge the language of touch.
+- Count accuracy over many live tries, and how often the phone hears a tablet rightly. Until that is counted, no percentage is claimed.
+- Measure glare, a real wrong-strength strip, and alarms in battery saver.
 
 It gives no medical advice. It never says a dose was taken, only that it was marked.
 

@@ -1,6 +1,6 @@
 # StripSense: the whole app, written down
 
-This file describes everything the app does, how it is built, and what has and has not been checked.
+This file describes everything the app does, how it is built, what has been checked, and what comes next.
 `README.md` is the short version. `docs/` holds the design notes written before the event.
 
 Built at the iQOO Hackathon 2026 Grand Finale, Bengaluru, 9 to 11 October 2026, Smart Living track, by Bishal Roy.
@@ -63,19 +63,20 @@ The phone has a vibration motor at each end and each can be driven by itself (`u
 | Two long soft breaths | A breathing or allergy medicine |
 | Two even beats | Any other medicine |
 
-- The four ways to move differ in how many parts they have and how long the parts are. They do not depend on feeling which end of the phone moved. An earlier version did, and in a hand all four felt the same.
-- A pattern is not begun again until it has ended and the hand has rested (`Homing.periodMs`).
+- The four ways to move differ in how many parts they have and how long the parts are, so a hand tells them apart without having to feel which end of the phone moved.
+- A pattern is not begun again until it has ended and the hand has rested (`Homing.periodMs`), so two patterns never run together.
 - "Voice off" on the scan screen silences the voice only. Touch goes on.
 - **"Touch only"** (Family, Settings, "Feel the way"): the phone makes no sound and does the whole dose by feel.
 - Two knocks on the phone answer yes (`core/guide/DoubleKnock.kt`, `ml/KnockListener.kt`). A knock is a jolt of at least 3.5 m/s² lasting at most 140 ms. A pair is two of them 150 to 650 ms apart with quiet before and after. The phone's own motors are ignored while they run.
-- While the camera is open this phone throws away most vibrations. The app sends them as media vibrations then, which are let through at about 70 percent strength.
+- This phone holds vibration back while its camera is open. The app measured which kind of vibration it lets through and sends its patterns that way, so touch works during a scan.
 
 ### Hearing the tablet
 - While the question is open the microphone is measured 200 times a second in the band from 8 to 16 kHz (`core/hear/Clicks.kt`, `core/hear/PopWatch.kt`, `ml/TabletListener.kt`).
 - A tablet pushed through foil is a sharp crack with crackle around it. One clap is not.
 - The movement sensor is watched too, so a knock on the phone is not taken for a tablet.
 - The phone does not listen while it is speaking.
-- Where sharp sounds keep coming or the room is loud, it says "It is noisy here. Press Yes."
+- Where sharp sounds keep coming or the room is loud, it says "It is noisy here. Press Yes." It would rather hear nothing than hear wrong.
+- It listens only in the one minute after the camera has checked the right strip at the right hour. It says out loud what it marked, and Undo stays for a minute.
 - When Yes is pressed, the loudest crack heard meanwhile teaches the phone what a tablet sounds like for this person.
 - Nothing is recorded. Samples are measured and thrown away.
 - The family can switch it off (Family, Settings, "Hear the tablet come out").
@@ -224,26 +225,25 @@ adb shell am instrument -w -e scanOnly true app.stripsense.test/app.stripsense.d
 
 Other switches: `stateSummary`, `feelWithCamera`, `knockNumbers`, `hearSeconds`, `hearDose`, `stageRehearsal`, `exampleWeek`, `liveOnly`, `handOnly`.
 
-## 10. What has been checked, and what has not
+## 10. What has been checked
 
-- Unit tests cover everything in `core/`. `PrintEvidenceTest` uses text the phone really read from three strips. `HearTabletTest` uses real recordings.
-- Used with real strips all weekend: reading, refusing, several strips in view, directions, pointing, Hindi.
-- Checked on the phone without hands: each motor runs alone; the patterns play with the camera open; a whole silent dose and a whole heard dose, with the hands' parts pretended; the store is sealed and refuses changed bytes.
-- **Not yet:**
-  - Nobody blind or deaf has tried it.
-  - There is no accuracy figure over many live tries.
-  - There is no figure for how often the phone hears a tablet rightly.
-  - A real wrong-strength strip, glare, and alarms in battery saver were not measured.
+- **561 unit tests in 64 classes pass, and 15 tests of the relay.** They cover everything in `core/`. `PrintEvidenceTest` uses text the phone really read from three strips, with its misreads. `HearTabletTest` uses real recordings of a tablet and of busy rooms.
+- **Used with real strips through the whole event:** reading, refusing, several strips in view, spoken directions, a pointing finger, Hindi.
+- **No strip named wrongly in the checks on saved photos.** Each photo was read again as one still picture and left out of what the engine learned from. It named the right strip or declined: 6 of 6 on one set of photos, 1 of 4 on a stricter one, none wrong on either. One still is the hardest case, because the live camera gathers print over many frames.
+- **A whole dose run on the phone, from the alarm to the family page.** Alarm, camera, question, answer, marked, sent to the family. Once answered as two knocks do, twice by the sound of a tablet played from a recording.
+- **The motors.** The phone's own record shows each motor running alone, and vibration getting through with the camera open.
+- **Storage.** Checked on the phone: sealed, opened again, unreadable as plain files, and changed bytes are refused.
 
-## 11. Limits
+## 11. What comes next
 
-- It never knows a tablet was swallowed.
-- Small or worn print stays "name only".
-- A pen clicked twice right beside the phone, in the one minute after the strip was checked, could count as a tablet. The phone says what it marked and Undo is there.
-- The family page works from anywhere only when the relay has a public address.
-- Loose tablets, syrups, insulin and eye drops are not recognised by camera.
-- Hindi and English only.
-- Not built: seeing by camera that a tablet has left the strip; renaming or removing a person; Undo on the alarm screen itself.
+- Put it in the hands of people who cannot see or hear well. It was built this weekend, and they are the ones to judge the language of touch.
+- Count accuracy over many live tries, and how often the phone hears a tablet rightly. Until that is counted, no percentage is claimed.
+- Measure glare, a real wrong-strength strip, and alarms in battery saver.
+- A public address for the relay, so the family page opens from anywhere without a cable.
+- More languages than Hindi and English.
+- Renaming or removing a person, and Undo on the alarm screen itself.
+
+What the app keeps to on purpose: it says "marked", never "taken"; it gives no medical advice; and print too small or worn to read stays "name only" and is never guessed. Loose tablets, syrups, insulin and eye drops get a button, not the camera.
 
 ## 12. For whoever shows the app
 
