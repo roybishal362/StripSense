@@ -44,6 +44,9 @@ import app.stripsense.core.domain.DoseEvent
 import app.stripsense.core.domain.EventKind
 import app.stripsense.core.dose.Proofs
 import app.stripsense.core.play.DayState
+import app.stripsense.core.play.Gifts
+import app.stripsense.core.play.Invites
+import app.stripsense.core.play.codeRecord
 import app.stripsense.core.play.Journeys
 import app.stripsense.core.play.Mood
 import app.stripsense.core.say.PlayText
@@ -75,6 +78,12 @@ fun Celebration(state: AppState) {
         // Only a mark made this moment. A list that was loaded, or a week filled in, is not a moment.
         if (kotlin.math.abs(state.now() - mark.atMillis) > 15_000) return@LaunchedEffect
         show = mark
+        // The dose is done: now Pattu may ask the person to stay a minute. Which thing it offers comes from the dose
+        // itself, so it is what the alarm's screen promised.
+        val today = state.engine.dosingDate(state.now())
+        val journey = journeyOf(state, state.now())
+        state.invite = Invites.pick(Invites.seed(mark.medId, mark.slotKey),
+            chatOpen = journey.onTrack && Gifts.givenOn(state.data.gifts, today) == null, codeOpen = !state.data.codeRecord().wonOn(today))
         fall.snapTo(0f)
         launch { fall.animateTo(1f, tween(2600, easing = LinearEasing)) }
         launch {

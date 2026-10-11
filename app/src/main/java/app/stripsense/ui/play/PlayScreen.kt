@@ -58,6 +58,7 @@ import app.stripsense.core.domain.People
 import app.stripsense.core.guide.FeelLanguage
 import app.stripsense.core.play.Badge
 import app.stripsense.core.play.DayState
+import app.stripsense.core.play.InviteKind
 import app.stripsense.core.play.Journey
 import app.stripsense.core.play.Journeys
 import app.stripsense.core.play.codeRecord
@@ -95,15 +96,24 @@ fun PlayScreen(state: AppState) {
     val now = state.now()
     val journey = remember(data, now / 60_000) { journeyOf(state, now) }
     val mood = Journeys.mood(journey, state.engine.local(now).hour)
+    // Opened on one thing only for this visit: the next visit begins with Pattu again.
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { state.playFocus = null } }
     Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Spacer(Modifier.height(2.dp))
+        // Come from Pattu's question after a dose ("want a hand of tic-tac-toe?"): that thing is the first on the screen.
+        val focus = state.playFocus
+        when (focus) {
+            InviteKind.CHAT -> { GiftCard(state, journey); ChatCard(state, journey, mood) }
+            InviteKind.TIC_TAC_TOE -> TicTacToeCard(state, journey)
+            InviteKind.CODE -> CodeCard(state, journey)
+            null -> Unit
+        }
         Hero(state, journey, mood, example = data.events.any { it.example })
         SkinsCard(state, journey)
         StreakCard(journey, lang)
-        GiftCard(state, journey)
-        ChatCard(state, journey, mood)
-        TicTacToeCard(state, journey)
-        CodeCard(state, journey)
+        if (focus != InviteKind.CHAT) { GiftCard(state, journey); ChatCard(state, journey, mood) }
+        if (focus != InviteKind.TIC_TAC_TOE) TicTacToeCard(state, journey)
+        if (focus != InviteKind.CODE) CodeCard(state, journey)
         QuestsCard(journey, lang)
         BadgesCard(journey, lang)
         Text(PlayText.rule(lang), style = AppType.forLanguage(AppType.caption, lang).copy(fontSize = 14.sp), modifier = Modifier.padding(horizontal = 6.dp))

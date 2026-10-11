@@ -160,6 +160,16 @@ fun ReminderPanel(state: AppState) {
                     modifier = Modifier.padding(top = 10.dp, bottom = 8.dp))
                 Text(Sentences.reminderLine(med?.let { People.of(state.data, it).call(lang) }.orEmpty(), slot.time, open.any { it.first.type == MedType.CAMERA }, lang), color = Color.White.copy(alpha = 0.93f),
                     fontSize = 16.5.sp, lineHeight = 24.sp, textAlign = TextAlign.Center, modifier = Modifier.widthIn(max = 340.dp))
+                // What waits after the dose: a small thing from Pattu to look forward to. Only words: the dose comes
+                // first, and nothing here can be pressed instead of it. Not for a dose that is already marked.
+                if (med != null && open.isNotEmpty()) {
+                    val today = state.engine.dosingDate(state.now())
+                    val waiting = app.stripsense.core.play.Invites.pick(app.stripsense.core.play.Invites.seed(med.id, slot.key),
+                        chatOpen = app.stripsense.core.play.Gifts.givenOn(state.data.gifts, today) == null,
+                        codeOpen = !(state.data.codeDay == today.toString() && state.data.codeWon))
+                    Text(app.stripsense.core.say.PlayText.teaser(waiting, lang), color = Color.White.copy(alpha = 0.85f), fontSize = 14.5.sp, fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center, modifier = Modifier.padding(top = 10.dp).clip(RoundedCornerShape(14.dp)).background(Color.White.copy(alpha = 0.12f)).padding(horizontal = 14.dp, vertical = 8.dp))
+                }
             }
             if (ringing) Row(Modifier.padding(top = 16.dp).heightIn(min = 44.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.16f))
                 .border(1.dp, Color.White.copy(alpha = 0.26f), CircleShape).clickable(role = Role.Button) { quiet() }.padding(horizontal = 16.dp),

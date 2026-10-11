@@ -157,6 +157,28 @@ object PlayText {
         }
     }
 
+    // ---- what Pattu offers with the alarm ----
+
+    /** On the alarm's screen, before the dose: what is waiting after it. Only words. */
+    fun teaser(kind: app.stripsense.core.play.InviteKind, lang: String): String {
+        val hi = lang == "hi"
+        return when (kind) {
+            app.stripsense.core.play.InviteKind.CHAT -> if (hi) "इसके बाद: मेरे पास आपके लिए एक अच्छा सुझाव है।" else "After this one: I have something good for you."
+            app.stripsense.core.play.InviteKind.TIC_TAC_TOE -> if (hi) "इसके बाद: मेरे साथ ज़ीरो-काटा की एक बाज़ी?" else "After this one: a hand of tic-tac-toe with me?"
+            app.stripsense.core.play.InviteKind.CODE -> if (hi) "इसके बाद: आज का पैटर्न पहचान पाएँगे?" else "After this one: can you guess today's pattern?"
+        }
+    }
+
+    /** After the dose is marked: Pattu asks. */
+    fun invite(kind: app.stripsense.core.play.InviteKind, lang: String): String {
+        val hi = lang == "hi"
+        return when (kind) {
+            app.stripsense.core.play.InviteKind.CHAT -> if (hi) "थोड़ी गपशप करें? मेरे पास आपके लिए एक अच्छा सुझाव है।" else "Want a little chit chat? I have a good recommendation for you."
+            app.stripsense.core.play.InviteKind.TIC_TAC_TOE -> if (hi) "ज़ीरो-काटा की एक बाज़ी खेलें?" else "Want to play a hand of tic-tac-toe?"
+            app.stripsense.core.play.InviteKind.CODE -> if (hi) "आज का पैटर्न पहचानें?" else "Want to guess today's pattern?"
+        }
+    }
+
     /** With nothing to ask about: an open door. */
     fun chatOpen(lang: String): String = if (lang == "hi") "अपने दिन के बारे में बताइए, या पूछिए कि क्या देखें।" else "Tell me about your day, or ask me what to watch."
 

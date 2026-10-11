@@ -67,6 +67,8 @@ object Labels {
         "chatSay" to ("Say something to Pattu" to "पत्तू से कुछ कहिए"),
         "chatSend" to ("Send" to "भेजिए"),
         "skinsTitle" to ("Choose your Pattu" to "अपना पत्तू चुनिए"),
+        "inviteYes" to ("Yes, let's" to "हाँ, चलिए"),
+        "inviteNo" to ("Not now" to "अभी नहीं"),
         "exampleFamilyTitle" to ("Example family" to "उदाहरण परिवार"),
         "exampleFamilyOff" to ("Adds a wife and a baby with example medicines, to show that the app is for the whole family. One press takes them out again." to
             "उदाहरण की दवाओं के साथ एक पत्नी और एक बच्चा जोड़ता है, यह दिखाने के लिए कि ऐप पूरे परिवार के लिए है। एक बार दबाने से वे हट जाते हैं।"),

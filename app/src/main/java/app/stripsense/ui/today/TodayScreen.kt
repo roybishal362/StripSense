@@ -102,6 +102,8 @@ fun TodayScreen(state: AppState) {
                 Text(Labels.get("emptyRealList", lang), style = AppType.forLanguage(AppType.body, lang).copy(color = AppColors.ink2))
                 SideButton(Labels.get("addMedicine", lang), Modifier.fillMaxWidth()) { state.familyTab = app.stripsense.FamilyTab.LIST; state.go(Screen.FAMILY) }
             } else {
+                // After a dose is marked Pattu asks the person to stay a minute. Nothing is shown otherwise.
+                app.stripsense.ui.play.InviteCard(state)
                 // The journey first: Pattu, the level and the row of days. It is the reason to open the app.
                 app.stripsense.ui.play.JourneyStrip(state, now)
                 ReminderReadiness(state)

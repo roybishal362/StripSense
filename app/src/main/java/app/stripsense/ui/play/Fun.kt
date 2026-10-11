@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
@@ -215,6 +216,31 @@ internal fun ChatCard(state: AppState, journey: Journey, mood: Mood) {
                 answer(PlayText.dayReply(feel, lang))
             }
             null -> Unit
+        }
+    }
+}
+
+/**
+ * After a dose is marked Pattu asks the person to stay a minute: a chit chat with a recommendation, a hand of
+ * tic-tac-toe, or today's pattern. Yes opens the Journey on that thing; "not now" puts the question away.
+ */
+@Composable
+fun InviteCard(state: AppState) {
+    val kind = state.invite ?: return
+    val lang = state.language
+    val journey = remember(state.data) { journeyOf(state, state.now()) }
+    Column(Modifier.fillMaxWidth().shadow(8.dp, CardShape).clip(CardShape).background(Color(0xFFFFF4D6)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            PattuFigure(journey.stage, Mood.PROUD, Modifier.size(72.dp), skin = skinOf(state, journey))
+            Text(PlayText.invite(kind, lang), Modifier.weight(1f), color = AppColors.ink, fontSize = if (lang == "hi") 20.sp else 19.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 26.sp)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Button(onClick = { state.playFocus = kind; state.invite = null; state.go(app.stripsense.Screen.PLAY) }, shape = AppShapes.button,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF8A1F), contentColor = Color.White),
+                modifier = Modifier.weight(1f).heightIn(min = 60.dp)) { Text(Labels.get("inviteYes", lang), fontSize = 18.sp, fontWeight = FontWeight.ExtraBold) }
+            OutlinedButton(onClick = { state.invite = null }, shape = AppShapes.button, modifier = Modifier.weight(1f).heightIn(min = 60.dp)) {
+                Text(Labels.get("inviteNo", lang), fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            }
         }
     }
 }

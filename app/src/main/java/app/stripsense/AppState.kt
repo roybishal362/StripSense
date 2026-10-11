@@ -6,6 +6,7 @@ import app.stripsense.core.guide.Felt
 import app.stripsense.core.guide.FeelLanguage
 import app.stripsense.core.dose.ExampleWeek
 import app.stripsense.core.dose.ExampleFamily
+import app.stripsense.core.play.InviteKind
 import app.stripsense.core.domain.People
 
 import app.stripsense.data.FamilyLink
@@ -179,6 +180,10 @@ class AppState(
             ExampleWeek.build(People.medicines(all, person.id), real, System.currentTimeMillis(), engine) { newId() }
         })
     }
+
+    /** What Pattu is offering now, after a dose was marked (core/play/Invites.kt), and what the Journey should open on. In memory only. */
+    var invite by mutableStateOf<InviteKind?>(null)
+    var playFocus by mutableStateOf<InviteKind?>(null)
     var reminderRequest by mutableStateOf<Pair<String, String>?>(null)
     var scanDoseRequest by mutableStateOf<Pair<String, String>?>(null)
 
