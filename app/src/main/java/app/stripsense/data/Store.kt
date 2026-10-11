@@ -95,6 +95,26 @@ class Store(private val dir: File, val cipher: StoreCipher?, private val fresh: 
     fun setTopMotor(id: Int) = change { it.copy(topMotor = id) }
     fun setTouchOnly(on: Boolean) = change { it.copy(touchOnly = on) }
     fun setFeelBest(row: Int) = change { if (row > it.feelBest) it.copy(feelBest = row) else it }
+
+    /** A game of tic-tac-toe was won. The first win of a day earns [points]; later ones the same day are for fun. */
+    fun tttWon(day: String, points: Int) = change {
+        it.copy(tttWins = it.tttWins + 1, tttDay = day, playPoints = it.playPoints + if (it.tttDay == day) 0 else points.coerceAtLeast(0))
+    }
+
+    /** Today's gift was chosen: kept, so it is never given twice and Pattu can ask about it another day. */
+    fun giveGift(entry: String) = change { if (entry in it.gifts) it else it.copy(gifts = it.gifts + entry) }
+
+    /** What the person said about a gift ("giftId|LOVED"), on [day]. A later answer about the same gift replaces the earlier one. */
+    fun talkGift(entry: String, day: String) = change {
+        it.copy(giftTalk = it.giftTalk.filterNot { old -> old.substringBefore('|') == entry.substringBefore('|') } + entry, chatGiftDay = day)
+    }
+
+    /** How the person said their day is going, on [day]. */
+    fun chatDay(day: String, feel: String) = change { it.copy(chatDay = day, chatFeel = feel) }
+
+    /** A try at the daily code has ended, for the first time today: the day is kept and its points are added. */
+    fun finishCode(record: app.stripsense.core.play.CodeRecord, points: Int) =
+        change { it.copy(codeDay = record.day, codeWon = record.won, codeRow = record.row, codeBestRow = record.bestRow, playPoints = it.playPoints + points.coerceAtLeast(0)) }
     /** Switching it off also forgets how loud a tablet sounded, so switching it on again starts from the beginning. */
     fun setHearTablet(on: Boolean) = change { it.copy(hearTablet = on, tabletSound = if (on) it.tabletSound else 0f) }
 

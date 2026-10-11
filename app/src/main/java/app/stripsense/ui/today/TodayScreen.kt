@@ -102,10 +102,11 @@ fun TodayScreen(state: AppState) {
                 Text(Labels.get("emptyRealList", lang), style = AppType.forLanguage(AppType.body, lang).copy(color = AppColors.ink2))
                 SideButton(Labels.get("addMedicine", lang), Modifier.fillMaxWidth()) { state.familyTab = app.stripsense.FamilyTab.LIST; state.go(Screen.FAMILY) }
             } else {
+                // The journey first: Pattu, the level and the row of days. It is the reason to open the app.
+                app.stripsense.ui.play.JourneyStrip(state, now)
                 ReminderReadiness(state)
                 NextUpCard(state, rows, now)
                 LowSupplyCard(state, now)
-                PlayCard(state, now, rows)
                 for (slot in Slot.entries) {
                     val inSlot = rows.filter { Slot.of(it.slot.time) == slot }
                     if (inSlot.isEmpty()) continue
@@ -184,26 +185,6 @@ private fun LowSupplyCard(state: AppState, now: Long) {
             Text(nick(med, lang), style = AppType.forLanguage(AppType.body, lang).copy(fontWeight = FontWeight.Bold))
             app.stripsense.core.say.SupplyText.line(supply, lang)?.let { Text(it, style = AppType.forLanguage(AppType.body, lang).copy(color = AppColors.dueText)) }
         }
-    }
-}
-
-/** The way into Play: the plant in one line. It grows with every dose, so it is a reason to come back tomorrow. */
-@Composable
-private fun PlayCard(state: AppState, now: Long, rows: List<TodayRow>) {
-    val lang = state.language
-    val data = state.data
-    val week = app.stripsense.core.report.WeekViews.build(People.medicines(data), data.events, now, state.engine, app.stripsense.core.report.WeekViews.knownSince(data))
-    val plant = app.stripsense.core.play.Plants.of(week, state.engine.dosingDate(now))
-    val mood = app.stripsense.core.play.Plants.mood(plant, rows.any { it.due && it.state == app.stripsense.core.dose.SlotState.UNMARKED }, state.engine.local(now).hour)
-    Row(Modifier.fillMaxWidth().clip(AppShapes.card).background(AppColors.surface).clickable { state.go(Screen.PLAY) }.padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        app.stripsense.ui.play.PlantPicture(plant, mood, Modifier.size(width = 56.dp, height = 78.dp))
-        Column(Modifier.weight(1f)) {
-            Text(Labels.get("plantTitle", lang), style = AppType.forLanguage(AppType.body, lang).copy(fontWeight = FontWeight.Bold))
-            Text(app.stripsense.core.say.PlayText.pattu(mood, plant, 0, lang), style = AppType.forLanguage(AppType.caption, lang).copy(fontSize = 14.sp, color = AppColors.ink2))
-        }
-        Text(Labels.get("playOpen", lang), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold,
-            modifier = Modifier.clip(AppShapes.chip).background(AppColors.brand700).padding(horizontal = 18.dp, vertical = 12.dp))
     }
 }
 

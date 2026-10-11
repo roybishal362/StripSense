@@ -57,7 +57,7 @@ class FeelQuizTest {
         assertEquals("Right. 4 in a row.", PlayText.right(4, "en"))
         assertEquals("That was: BP medicine. Feel it again.", PlayText.wrong(FeelItem.BP, "en"))
         assertTrue(PlayText.wrong(FeelItem.BP, "hi").contains(FeelItem.BP.hi))
-        assertEquals(4, (1..4).map { PlayText.level(it, "en") }.toSet().size)
+        assertEquals(4, (1..4).map { PlayText.ask(it, "en") }.toSet().size)
         for (item in FeelItem.entries) assertTrue(item.en.isNotBlank() && item.hi.isNotBlank() && item.name("hi") == item.hi)
     }
 }

@@ -97,6 +97,21 @@ data class StoreData(
     val touchOnly: Boolean = false,
     /** The longest row of right answers in "Feel and tell" (core/play/FeelQuiz.kt). */
     val feelBest: Int = 0,
+    /** The daily code (core/play/DailyCode.kt): the last day a try was finished, whether it was cracked, the row of days, and the points the games earned. */
+    val codeDay: String = "",
+    val codeWon: Boolean = false,
+    val codeRow: Int = 0,
+    val codeBestRow: Int = 0,
+    val playPoints: Int = 0,
+    /** Tic-tac-toe with Pattu: games won, and the last day a win was counted for points. */
+    val tttWins: Int = 0,
+    val tttDay: String = "",
+    /** The day's gifts as "day|giftId", what the person said about them as "giftId|LOVED", and the last day each chit chat was answered. */
+    val gifts: List<String> = emptyList(),
+    val giftTalk: List<String> = emptyList(),
+    val chatGiftDay: String = "",
+    val chatDay: String = "",
+    val chatFeel: String = "",
     val lookCheckOn: Boolean = true,
     val secondReader: SecondReaderMode = SecondReaderMode.ON,
     val listSavedAtMillis: Long = 0,

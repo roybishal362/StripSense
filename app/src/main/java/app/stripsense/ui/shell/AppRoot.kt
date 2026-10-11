@@ -108,6 +108,8 @@ fun AppRoot(state: AppState) {
         if (screen in listOf(Screen.TODAY, Screen.ASK, Screen.NUMBERS, Screen.HEALTH, Screen.FAMILY)) BottomBar(state)
     }
     ReminderPanel(state)
+    // A dose just marked: a moment of confetti and points, laid over the screen. It takes no touch.
+    app.stripsense.ui.play.Celebration(state)
 }
 
 private fun titleKey(screen: Screen): String = when (screen) {
